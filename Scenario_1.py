@@ -54,7 +54,7 @@ if 'function_test_completed' not in st.session_state:
     st.session_state.function_test_completed = False
 
 # ====================================================================
-# 3. SIDEBAR TELEMETRY CONTROLS
+# 3. SIDEBAR TELEMETRY CONTROLS (Includes defining rov_altitude first!)
 # ====================================================================
 st.sidebar.image("https://img.icons8.com/external-flatart-icons-flat-flatarticons/128/external-robotics-artificial-intelligence-flatart-icons-flat-flatarticons.png", width=60)
 st.sidebar.title("EPCI Gate Control")
@@ -72,6 +72,10 @@ manipulator_readiness = st.sidebar.selectbox("Manipulator Calibrations", ["Verif
 # Crew Rigging
 st.sidebar.subheader("👤 Supervisor Log")
 supervisor_id = st.sidebar.text_input("Lead Subsea Supervisor ID", value="SV-IMCA-4401")
+
+# Vessel Positioning (Defined globally here so Plotly can access it immediately)
+st.sidebar.subheader("⚓ Vessel Positioning")
+rov_altitude = st.sidebar.slider("ROV Flight Altitude (m)", 1.0, 10.0, 4.0, step=0.5)
 
 # ====================================================================
 # 4. FIVE-STAGE PIPELINE WORKFLOW (THE DEMO TRAIL)
@@ -124,154 +128,3 @@ with step_tabs[1]:
         if f1 and f2 and f3:
             st.session_state.function_test_completed = True
             st.success("✅ FUNCTION TESTS VERIFIED & ATTESTED BY CONTRACTOR SUPERVISOR")
-        else:
-            st.session_state.function_test_completed = False
-            st.warning("⚠️ Pending Contractor Function Testing Approvals.")
-
-    with col_doc:
-        st.markdown("### 📝 Tooling Method Statement")
-        st.info("""
-        **Procedure 22.4 - Hot Stab Valve Actuation:**
-        1. Deploy ROV with ISO 13628-8 Type A Dual Port Hot Stab secured in the utility holster.
-        2. Establish steady seafloor hover using DVL/INS station-keeping algorithms to offset current loads.
-        3. Utilize the 7-Function manipulator to extract the Hot Stab and execute parallel alignment with the receptacle.
-        4. Engage Hot Stab. Inject hydraulic fluid regulated up to 3,000 PSI to actuate the 500m depth valve on XMAS Tree XT-04.
-        """)
-
-# --------------------------------------------------------------------
-# TAB 3: DECK TEST & MOBILIZATION
-# --------------------------------------------------------------------
-with step_tabs[2]:
-    st.subheader("🏗️ Deck Test Verification Panel")
-    st.write("Perform real physical deck tests on mobilization of the tooling and system, submitting the telemetry results to the MRSIF interface.")
-
-    if not st.session_state.function_test_completed:
-        st.error("❌ Blocked: Complete Step 2 Contractor Function Tests before executing Deck Mobilization.")
-    else:
-        col_deck, col_permit = st.columns(2)
-        with col_deck:
-            st.markdown("### 🎛️ Wet/Dry Deck System Checklist")
-            d1 = st.checkbox("Run physical deck functional test on Dual Port Hot Stab manifold valves", value=st.session_state.deck_test_completed)
-            d2 = st.checkbox("Confirm hydraulic compensator oil levels are fully topped off", value=st.session_state.deck_test_completed)
-            d3 = st.checkbox("Verify ground fault monitoring systems (GFI) display clear green loops on power up", value=st.session_state.deck_test_completed)
-            
-            if d1 and d2 and d3:
-                st.session_state.deck_test_completed = True
-                st.success("✅ DECK TEST COMPLETED SUCCESSFULLY")
-            else:
-                st.session_state.deck_test_completed = False
-                st.warning("⚠️ Deck check execution required.")
-
-        with col_permit:
-            st.markdown("### 🔑 Live Gatekeeper Validation")
-            
-            # Evaluated Gates
-            metocean_passed = metocean_current <= work_order.max_current_limit_kts
-            manipulator_passed = "Active" in manipulator_readiness
-            deck_test_passed = st.session_state.deck_test_completed
-            
-            st.write(f"**Layer 3: Deck Test Status:** {'🟢 PASSED' if deck_test_passed else '🔴 PENDING'}")
-            st.write(f"**Layer 4: Metocean Limit Check:** {'🟢 PASSED' if metocean_passed else '🔴 BREACHED'}")
-            st.write(f"**Layer 0: Station Keeping & Manipulator Calibration:** {'🟢 PASSED' if auto_station_keeping and manipulator_passed else '🔴 ERROR'}")
-            
-            if metocean_passed and manipulator_passed and deck_test_passed and auto_station_keeping:
-                # Generate cryptographic license block
-                permit_data = {"work_order": work_order.work_order_id, "status": "APPROVED", "timestamp": datetime.now().isoformat()}
-                serialized_data = json.dumps(permit_data, sort_keys=True).encode('utf-8')
-                cryptographic_token = f"MRSIF-PERMIT-SIG-{hashlib.sha256(serialized_data).hexdigest()[:24].upper()}"
-                
-                st.success("🚀 DEPLOYMENT PERMIT ISSUED")
-                st.code(cryptographic_token, language="bash")
-            else:
-                st.error("🚫 MOBILIZATION SYSTEM LOCKED OUT")
-                st.warning("Ensure Metocean speeds match current limit thresholds and deck checklists are fully signed off.")
-
-# --------------------------------------------------------------------
-# TAB 4: LIVE DIGITAL TWIN WORKSPACE
-# --------------------------------------------------------------------
-with step_tabs[3]:
-    st.subheader("🌐 Chevron-1 Subsea Workspace Spatial Twin")
-    
-    # 3D Plotly Visuals Grid
-    X_floor = np.linspace(0, 100, 30)
-    Y_floor = np.linspace(-30, 30, 30)
-    X, Y = np.meshgrid(X_floor, Y_floor)
-    Z = 500.0 + (np.sin(X / 15.0) * np.cos(Y / 10.0) * 1.5)  # Wave clayey-sand seafloor topography
-
-    fig = go.Figure()
-    # Seafloor Base Mesh (Clayey Sand)
-    fig.add_trace(go.Surface(x=X, y=Y, z=Z, colorscale='Turbid', opacity=0.4, showscale=False, name="Clayey Sand Seafloor"))
-    
-    # Render Assets
-    is_safe = metocean_current <= work_order.max_current_limit_kts and st.session_state.deck_test_completed
-    for tag, d in SUBSEA_ASSETS.items():
-        m_color = "#10b981" if is_safe else "#ef4444" if "XMAS_TREE" in tag else d["color"]
-        fig.add_trace(go.Scatter3d(
-            x=[d["x"]], y=[d["y"]], z=[d["z"]],
-            mode="markers+text", name=f"{d['type']}",
-            text=[f"{d['type']}\n{tag}"], textposition="top center",
-            marker=dict(size=14, color=m_color, symbol='circle', line=dict(color='#ffffff', width=1))
-        ))
-
-    # Pipe routes
-    fig.add_trace(go.Scatter3d(x=[15.0, 50.0], y=[-15.0, 0.0], z=[505.0, 500.0], mode='lines', name="Flowline Corridor (Static)", line=dict(color='#475569', width=6)))
-    fig.add_trace(go.Scatter3d(x=[50.0, 90.0], y=[0.0, 0.0], z=[500.0, 495.0], mode='lines', name="Export Corridor", line=dict(color='#0284c7', width=6)))
-
-    # Plot Simulated Flight Path approaching XMAS Tree
-    path_x = np.linspace(10.0, 50.0, 20)
-    path_y = np.sin(path_x / 5.0) * 2.0
-    path_z = np.full(20, 500.0 - rov_altitude)
-    fig.add_trace(go.Scatter3d(
-        x=path_x, y=path_y, z=path_z,
-        mode='lines+markers', name="Active ROV Mission Track",
-        marker=dict(size=5, color='#10b981' if is_safe else '#ef4444'),
-        line=dict(color='#10b981' if is_safe else '#ef4444', width=4)
-    ))
-
-    fig.update_layout(
-        margin=dict(l=0, r=0, b=0, t=0), height=550,
-        scene=dict(
-            xaxis=dict(title="UTM East Alignment (m)", backgroundcolor="#0b0f19", gridcolor="#1e293b", showbackground=True),
-            yaxis=dict(title="UTM North Deviation (m)", backgroundcolor="#0b0f19", gridcolor="#1e293b", showbackground=True),
-            zaxis=dict(title="Seabed Depth (m)", autorange="reversed", backgroundcolor="#0b0f19", gridcolor="#1e293b", showbackground=True),
-            camera=dict(eye=dict(x=1.3, y=1.3, z=0.9))
-        ),
-        paper_bgcolor="#0b0f19", plot_bgcolor="#0b0f19",
-        legend=dict(yanchor="top", y=0.95, xanchor="left", x=0.02, font=dict(color="#94a3b8"))
-    )
-    
-    plot_placeholder.plotly_chart(fig, use_container_width=True)
-
-# --------------------------------------------------------------------
-# TAB 5: DELIVERABLES & SIGN-OFF
-# --------------------------------------------------------------------
-with step_tabs[4]:
-    st.subheader("📊 Execution Deliverables & Handover Package")
-    st.write("Upon successful operation, the MRSIF gateway compiles the mandatory telemetry logs, visual assets, and manipulator feedback to submit to Chevron.")
-    
-    if not is_safe:
-        st.warning("⚠️ Operations must be executed under approved environmental gates before deliverables are compiled.")
-    else:
-        st.success("🏁 OPERATION COMPLETED SUCCESSFULLY. EXPORTING DOCUMENTATION.")
-        
-        col_log1, col_log2 = st.columns(2)
-        with col_log1:
-            st.markdown("### 🗄️ Sensor & Tooling Feedback Packet")
-            telemetry_export = {
-                "work_order_reference": work_order.work_order_id,
-                "valve_actuation_status": "100% OPENED (500m Depth)",
-                "hot_stab_standard": "ISO 13628-8 Type A",
-                "regulated_insertion_pressure_psi": 3150.0,
-                "station_keeping_drift_m": 0.04,
-                "manipulator_torque_nm": 145.2,
-                "vessel_current_at_execution_kts": metocean_current
-            }
-            st.json(telemetry_export)
-            
-        with col_log2:
-            st.markdown("### 🎥 Deliverable Metadata Check")
-            st.info("📹 **Subsea Live Video Feed:** CHEV1_XT04_VALVE_ACTUATION.MP4 (Verified Recorded)")
-            st.info("🦾 **Manipulator Feedback:** Telemetry-Synchronized Joint Angles Log (Verified Recorded)")
-            st.info("🔌 **Hot Stab Log:** Hydraulic fluid pressure profiles logged in the API database.")
-            st.markdown("---")
-            st.markdown(f"**Lead Subsea Supervisor Certification Stamp:** `{supervisor_id}`")
