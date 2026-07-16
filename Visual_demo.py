@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Dict, Any
 
 # ====================================================================
-# 1. CORE DATA SCHEMAS (IOGP & CFIHOS COMPLIANT) [cite: 105, 108, 119]
+# 1. CORE DATA SCHEMAS (IOGP & CFIHOS COMPLIANT)
 # ====================================================================
 class HeaderBlock(BaseModel):
     thread_id: str = "TH-2026-9941A"
@@ -118,7 +118,7 @@ payload = CompleteMRSIFPayload(
     live_metocean_current_kts=metocean_current
 )
 
-# Run verification logic [cite: 212, 213, 214]
+# Run verification logic
 metocean_passed = metocean_current <= payload.vehicle_drag_max_kts
 spares_passed = spares_on_board >= 2
 gate_status = metocean_passed and spares_passed
@@ -173,7 +173,7 @@ for tag, data in SUBSEA_ASSETS.items():
         name=f"{data['type']} ({tag})",
         text=[f"{data['type']}\n{tag}"],
         textposition="top center",
-        marker=dict(size=14, color=marker_color, symbol='cube', line=dict(color='#ffffff', width=1))
+        marker=dict(size=14, color=marker_color, symbol='square', line=dict(color='#ffffff', width=1))
     ))
 
 # Plot C: Subsea Field Pipelines (Flowline Corridors)
@@ -195,32 +195,4 @@ fig.add_trace(go.Scatter3d(
 
 # Plot D: Simulated ROV Operational Inspection Path
 path_x = np.linspace(15.0, 85.0, 30)
-path_y = np.sin(path_x / 8.0) * 2.5
-path_z = np.full(30, 122.0 - rov_altitude)
-
-fig.add_trace(go.Scatter3d(
-    x=path_x, y=path_y, z=path_z,
-    mode='lines+markers',
-    name="ROV Inspection Path",
-    marker=dict(size=5, color='#10b981' if gate_status else '#ef4444'),
-    line=dict(color='#10b981' if gate_status else '#ef4444', width=4)
-))
-
-# Configure 3D View Angles, Labels, and Styles
-fig.update_layout(
-    margin=dict(l=0, r=0, b=0, t=0),
-    height=650,
-    scene=dict(
-        xaxis=dict(title="UTM X Alignment (m)", backgroundcolor="#0b0f19", gridcolor="#1e293b", showbackground=True),
-        yaxis=dict(title="UTM Y Deviation (m)", backgroundcolor="#0b0f19", gridcolor="#1e293b", showbackground=True),
-        zaxis=dict(title="True Depth (m)", autorange="reversed", backgroundcolor="#0b0f19", gridcolor="#1e293b", showbackground=True),
-        camera=dict(
-            eye=dict(x=1.3, y=1.3, z=0.9)
-        )
-    ),
-    paper_bgcolor="#0b0f19",
-    plot_bgcolor="#0b0f19",
-    legend=dict(yanchor="top", y=0.95, xanchor="left", x=0.02, font=dict(color="#94a3b8"))
-)
-
-plot_placeholder.plotly_chart(fig, use_container_width=True)
+path_y =
