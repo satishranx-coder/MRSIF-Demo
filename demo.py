@@ -16,24 +16,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Enforce clean custom styling for a modern corporate dashboard look
-st.markdown(
-    """
-    <style>
-    .metric-box {
-        background-color: #1e293b;
-        padding: 20px;
-        border-radius: 8px;
-        border: 1px solid #334155;
-    }
-    .status-normal { color: #10b981; font-weight: bold; }
-    .status-anomaly { color: #ef4444; font-weight: bold; }
-    .status-alert { color: #f59e0b; font-weight: bold; }
-    </style>
-    """,
-    unsafe_allowed_html=True
-)
-
 # --------------------------------------------------------------------
 # 2. SIDEBAR PANEL CONTROLS
 # --------------------------------------------------------------------
@@ -63,24 +45,20 @@ st.title("🤖 MRSIF: Marine Robotics Subsea Intelligence Framework")
 st.subheader("Autonomous Inspection Mission Live Simulation Dashboard")
 st.markdown("---")
 
-# Row 1: High-level KPI summary cards for investor impact
+# Row 1: High-level KPI summary cards (Using native st.container with borders)
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.markdown('<div class="metric-box">', unsafe_allowed_html=True)
-    st.metric(label="Edge Autonomy Status", value="ACTIVE", delta="Level 4 Autonomy")
-    st.markdown('</div>', unsafe_allowed_html=True)
+    with st.container(border=True):
+        st.metric(label="Edge Autonomy Status", value="ACTIVE", delta="Level 4 Autonomy")
 with col2:
-    st.markdown('<div class="metric-box">', unsafe_allowed_html=True)
-    st.metric(label="Mission Efficiency Boost", value="+22.4%", delta="Optimized Pathing")
-    st.markdown('</div>', unsafe_allowed_html=True)
+    with st.container(border=True):
+        st.metric(label="Mission Efficiency Boost", value="+22.4%", delta="Optimized Pathing")
 with col3:
-    st.markdown('<div class="metric-box">', unsafe_allowed_html=True)
-    st.metric(label="Estimated Vessel Cost Saved", value="$14,200", delta="-18 Hours Tethered ROV Time")
-    st.markdown('</div>', unsafe_allowed_html=True)
+    with st.container(border=True):
+        st.metric(label="Estimated Vessel Cost Saved", value="$14,200", delta="-18 Hours ROV Time")
 with col4:
-    st.markdown('<div class="metric-box">', unsafe_allowed_html=True)
-    st.metric(label="Data Compression at Edge", value="94.1%", delta="Reduced Acoustic Uplink Burden")
-    st.markdown('</div>', unsafe_allowed_html=True)
+    with st.container(border=True):
+        st.metric(label="Data Compression at Edge", value="94.1%", delta="Reduced Uplink Burden")
 
 st.write("\n")
 
@@ -126,17 +104,15 @@ if st.button("🚀 Start Live Software Demonstration"):
         timestamp_str = time.strftime("%H:%M:%S")
         
         if rand_event > 0.93:
-            log_entry = f"⚠️ [{timestamp_str}] <span class='status-anomaly'>CRITICAL ANOMALY:</span> Structural Crack/Fatigue detected on {asset_type}. Confidence: {round(random.uniform(91, 98),1)}%."
-            st.session_state.anomaly_logs.insert(0, log_entry)
-            st.session_state.anomaly_logs.insert(0, f"🤖 [{timestamp_str}] <span class='status-alert'>DECISION CORE:</span> Deviating from pre-planned survey path. Hover mode engaged for close-proximity 3D scanning.")
+            st.session_state.anomaly_logs.insert(0, f"⚠️ [{timestamp_str}] CRITICAL ANOMALY: Structural Crack/Fatigue detected on {asset_type}. Confidence: {round(random.uniform(91, 98), 1)}%.")
+            st.session_state.anomaly_logs.insert(0, f"🤖 [{timestamp_str}] DECISION CORE: Deviating from pre-planned survey path. Hover mode engaged for close-proximity 3D scanning.")
         elif rand_event < 0.04:
-            log_entry = f"⚡ [{timestamp_str}] <span class='status-alert'>SYSTEM WARNING:</span> High turbidity environment detected. Swapping weights to Sonar Perception profiling."
-            st.session_state.anomaly_logs.insert(0, log_entry)
+            st.session_state.anomaly_logs.insert(0, f"⚡ [{timestamp_str}] SYSTEM WARNING: High turbidity environment detected. Swapping weights to Sonar Perception profiling.")
             
         # 4. Render 3D Digital Twin visualization tracking space
         fig = go.Figure()
         
-        # Draw the target asset track layout line (e.g. simulated seafloor pipeline trajectory)
+        # Draw the target asset track layout line
         pipeline_x = np.linspace(0, max(df["X"]) + 20, 100)
         pipeline_y = np.zeros(100)
         pipeline_z = np.full(100, 122.0)
@@ -161,7 +137,7 @@ if st.button("🚀 Start Live Software Demonstration"):
                 xaxis_title="Inspection Progress (X)",
                 yaxis_title="Cross-Track Deviation (Y)",
                 zaxis_title="Subsea Depth (Z)",
-                zaxis=dict(autorange="reversed"), # Depth increases downward
+                zaxis=dict(autorange="reversed"),
                 backgroundcolor="#0f172a"
             ),
             legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
@@ -177,16 +153,13 @@ if st.button("🚀 Start Live Software Demonstration"):
             b_col1.metric("AUV Power Remaining", f"{round(battery, 1)}%")
             b_col2.metric("Current Node (XYZ)", f"{round(x,1)}, {round(y,1)}, {round(z,1)}")
         
-        # Update raw processing log view
-        log_html = "".join([f"<p style='margin-bottom:8px;'>{log}</p>" for log in st.session_state.anomaly_logs[:8]])
-        if not log_html:
-            log_html = "<p style='color:#64748b;'>Framework executing normal path surveillance routines. No anomalies recorded.</p>"
+        # Update raw processing log view using standard strings (no custom HTML spans)
+        if st.session_state.anomaly_logs:
+            log_text = "\n\n".join(st.session_state.anomaly_logs[:8])
+        else:
+            log_text = "Framework executing normal path surveillance routines. No anomalies recorded."
             
-        log_placeholder.markdown(f"""
-            <div style="background-color: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; height: 320px; overflow-y: auto; font-family: monospace; font-size: 13px;">
-                {log_html}
-            </div>
-        """, unsafe_allowed_html=True)
+        log_placeholder.text_area("Live Events Window", value=log_text, height=320, disabled=True)
         
         time.sleep(1.0 / refresh_rate)
         
