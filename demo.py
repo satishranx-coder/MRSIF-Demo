@@ -17,7 +17,8 @@ st.set_page_config(
 )
 
 # Enforce clean custom styling for a modern corporate dashboard look
-st.markdown("""
+st.markdown(
+    """
     <style>
     .metric-box {
         background-color: #1e293b;
@@ -29,7 +30,9 @@ st.markdown("""
     .status-anomaly { color: #ef4444; font-weight: bold; }
     .status-alert { color: #f59e0b; font-weight: bold; }
     </style>
-""", unsafe_allowed_html=True)
+    """,
+    unsafe_allowed_html=True
+)
 
 # --------------------------------------------------------------------
 # 2. SIDEBAR PANEL CONTROLS
