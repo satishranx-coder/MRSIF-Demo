@@ -131,14 +131,16 @@ if st.button("🚀 Start Live Software Demonstration"):
         ))
         
         # Structure camera viewing perspectives dynamically
-        fig.update_layout(
+       fig.update_layout(
             margin=dict(l=0, r=0, b=0, t=0),
             scene=dict(
-                xaxis_title="Inspection Progress (X)",
-                yaxis_title="Cross-Track Deviation (Y)",
-                zaxis_title="Subsea Depth (Z)",
-                zaxis=dict(autorange="reversed"),
-                backgroundcolor="#0f172a"
+                xaxis=dict(title="Inspection Progress (X)", backgroundcolor="#0f172a", showbackground=True),
+                yaxis=dict(title="Cross-Track Deviation (Y)", backgroundcolor="#0f172a", showbackground=True),
+                zaxis=dict(title="Subsea Depth (Z)", autorange="reversed", backgroundcolor="#0f172a", showbackground=True)
+            ),
+            legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+            paper_bgcolor="#0f172a",
+            plot_bgcolor="#0f172
             ),
             legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
             paper_bgcolor="#0f172a",
