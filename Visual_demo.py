@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Dict, Any
 
 # ====================================================================
-# 1. CORE DATA SCHEMAS (IOGP & CFIHOS COMPLIANT)
+# 1. CORE DATA SCHEMAS (IOGP & CFIHOS COMPLIANT) [cite: 105, 108, 119]
 # ====================================================================
 class HeaderBlock(BaseModel):
     thread_id: str = "TH-2026-9941A"
@@ -49,7 +49,6 @@ def generate_bathymetry_seafloor():
     x = np.linspace(0, 100, 30)
     y = np.linspace(-30, 30, 30)
     X, Y = np.meshgrid(x, y)
-    # Creating gentle terrain undulations centered around 125m depth
     Z = 125.0 + (np.sin(X / 15.0) * np.cos(Y / 10.0) * 1.8)
     return X, Y, Z
 
@@ -62,7 +61,7 @@ SUBSEA_ASSETS = {
 }
 
 # ====================================================================
-# 3. EXECUTIVE UI CONFIGURATION & STYLING
+# 3. EXECUTIVE UI CONFIGURATION
 # ====================================================================
 st.set_page_config(
     page_title="MRSIF | 3D FieldTwin Command Center",
@@ -70,16 +69,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-# Custom injection of smooth dark theme styles
-st.markdown("""
-    <style>
-    .reportview-container { background: #0b0f19; }
-    .stButton>button { width: 100%; font-weight: bold; }
-    .gate-passed { color: #10b981; font-weight: bold; }
-    .gate-failed { color: #ef4444; font-weight: bold; }
-    </style>
-""", unsafe_allowed_html=True)
 
 st.title("🌐 MRSIF: 3D Subsea Command Surface")
 st.caption("Active Digital Twin Environment Syncing OSDU Metocean Data & CFIHOS Asset Classes")
@@ -115,10 +104,8 @@ with panel_col:
 # ====================================================================
 # 4. DIGITAL TWIN SIMULATION RUN
 # ====================================================================
-# Initialize bathymetric background variables
 X_floor, Y_floor, Z_floor = generate_bathymetry_seafloor()
 
-# Instantiate compliance evaluation data structures
 payload = CompleteMRSIFPayload(
     mrsif_update_header=HeaderBlock(),
     asset_identity_block=AssetIdentityBlock(),
@@ -131,20 +118,27 @@ payload = CompleteMRSIFPayload(
     live_metocean_current_kts=metocean_current
 )
 
-# Run verification logic
+# Run verification logic [cite: 212, 213, 214]
 metocean_passed = metocean_current <= payload.vehicle_drag_max_kts
 spares_passed = spares_on_board >= 2
 gate_status = metocean_passed and spares_passed
 
-# Render interactive status panel cards
-with gate_placeholder.container():
+# Render interactive status panel cards using standard Streamlit markdown coloring
+with gate_placeholder.container(border=True):
     col_a, col_b = st.columns(2)
     with col_a:
-        st.markdown(f"**Layer 3: OEM Fit-Check**")
-        st.markdown(f"<span class='{'gate-passed' if spares_passed else 'gate-failed'}'>{'PASSED ✅' if spares_passed else 'FAILED ❌ (Low Spares)'}</span>", unsafe_allowed_html=True)
+        st.markdown("**Layer 3: OEM Fit-Check**")
+        if spares_passed:
+            st.markdown("### :green[PASSED ✅]")
+        else:
+            st.markdown("### :red[FAILED ❌ (Low Spares)]")
+            
     with col_b:
-        st.markdown(f"**Layer 4: Metocean Gate**")
-        st.markdown(f"<span class='{'gate-passed' if metocean_passed else 'gate-failed'}'>{'PASSED ✅' if metocean_passed else 'FAILED ❌ (High Current)'}</span>", unsafe_allowed_html=True)
+        st.markdown("**Layer 4: Metocean Gate**")
+        if metocean_passed:
+            st.markdown("### :green[PASSED ✅]")
+        else:
+            st.markdown("### :red[FAILED ❌ (High Current)]")
     
     st.markdown("---")
     if gate_status:
@@ -169,9 +163,8 @@ fig.add_trace(go.Surface(
     name="Seafloor Bathymetry"
 ))
 
-# Plot B: Asset Infrastructure Models (Rendering Blocks)
+# Plot B: Asset Infrastructure Models
 for tag, data in SUBSEA_ASSETS.items():
-    # Enforce active visual color indicator based on dynamic gate validation status
     marker_color = "#10b981" if gate_status else "#ef4444" if tag == "CFIHOS-PRD-MNFD-0042" else data["color"]
     
     fig.add_trace(go.Scatter3d(
@@ -184,19 +177,16 @@ for tag, data in SUBSEA_ASSETS.items():
     ))
 
 # Plot C: Subsea Field Pipelines (Flowline Corridors)
-# Pipeline 1: Wellhead 01 to Manifold
 fig.add_trace(go.Scatter3d(
     x=[15.0, 50.0], y=[-15.0, 0.0], z=[125.0, 122.0],
     mode='lines', name="Flowline A (Static)",
     line=dict(color='#475569', width=6, dash='solid')
 ))
-# Pipeline 2: Wellhead 02 to Manifold
 fig.add_trace(go.Scatter3d(
     x=[15.0, 50.0], y=[15.0, 0.0], z=[124.0, 122.0],
     mode='lines', name="Flowline B (Static)",
     line=dict(color='#475569', width=6, dash='solid')
 ))
-# Pipeline 3: Manifold to FPSO Riser Base
 fig.add_trace(go.Scatter3d(
     x=[50.0, 90.0], y=[0.0, 0.0], z=[122.0, 118.0],
     mode='lines', name="Export Pipeline Corridor",
@@ -204,7 +194,6 @@ fig.add_trace(go.Scatter3d(
 ))
 
 # Plot D: Simulated ROV Operational Inspection Path
-# The ROV flies along the Export Pipeline Corridor at a set altitude
 path_x = np.linspace(15.0, 85.0, 30)
 path_y = np.sin(path_x / 8.0) * 2.5
 path_z = np.full(30, 122.0 - rov_altitude)
@@ -217,7 +206,7 @@ fig.add_trace(go.Scatter3d(
     line=dict(color='#10b981' if gate_status else '#ef4444', width=4)
 ))
 
-# Configure 3D View Angles, Labels, and Styles (Decoupled Plotly Layout API)
+# Configure 3D View Angles, Labels, and Styles
 fig.update_layout(
     margin=dict(l=0, r=0, b=0, t=0),
     height=650,
@@ -226,7 +215,7 @@ fig.update_layout(
         yaxis=dict(title="UTM Y Deviation (m)", backgroundcolor="#0b0f19", gridcolor="#1e293b", showbackground=True),
         zaxis=dict(title="True Depth (m)", autorange="reversed", backgroundcolor="#0b0f19", gridcolor="#1e293b", showbackground=True),
         camera=dict(
-            eye=dict(x=1.3, y=1.3, z=0.9)  # Isometric overhead cinematic view
+            eye=dict(x=1.3, y=1.3, z=0.9)
         )
     ),
     paper_bgcolor="#0b0f19",
