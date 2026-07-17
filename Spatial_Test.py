@@ -304,19 +304,18 @@ with step_tabs[2]:
 with step_tabs[3]:
     st.markdown(f"### 🌐 Real-Time Spatial Grid Alignment Target: {runtime_payload.functional_tag}")
     
-    # Generate realistic subsea trench geometry (Trench down the middle)
+    # Generate realistic subsea trench geometry
     x_grid = np.linspace(0, 100, 40)
     y_grid = np.linspace(-40, 40, 40)
     X, Y = np.meshgrid(x_grid, y_grid)
     
-    # Seafloor base slope + realistic trench profile centered at Y=0
     base_seabed_depth = 510.0 + (X * 0.05)
     trench_depression = 8.0 * np.exp(-(Y / 12.0)**2)
     Z = base_seabed_depth - trench_depression
     
     fig = go.Figure()
     
-    # Plot high-fidelity multi-beam bathymetric colored seafloor surface
+    # Seafloor surface
     fig.add_trace(go.Surface(
         x=X, y=Y, z=Z, 
         colorscale='Viridis', 
@@ -325,12 +324,11 @@ with step_tabs[3]:
         colorbar=dict(title=dict(text="Depth (m)", font=dict(color="#94a3b8")), tickfont=dict(color="#94a3b8"))
     ))
     
-    # Plot target subsea equipment positions relative to trench slopes
+    # Subsea field equipment markers
     for tag, d in ACTIVE_FIELD_TAGS.items():
         is_current = (tag == selected_tag)
         m_color = "#10b981" if (is_safe and is_current) else "#ef4444" if is_current else "#38bdf8"
         
-        # Draw equipment item marker node
         fig.add_trace(go.Scatter3d(
             x=[d["x"]], y=[d["y"]], z=[d["z"]], 
             mode="markers+text", 
@@ -341,17 +339,14 @@ with step_tabs[3]:
             marker=dict(size=12, color=m_color, symbol='diamond', line=dict(color='#ffffff', width=2))
         ))
         
-        # Dynamic live representation vector showing the tracking vehicle above the target node
         if is_current:
             vehicle_alt = d["z"] - rov_altitude
-            # Draw tracking vehicle coordinate link line
             fig.add_trace(go.Scatter3d(
                 x=[d["x"], d["x"]], y=[d["y"], d["y"]], z=[d["z"], vehicle_alt],
                 mode="lines",
                 name="Acoustic Link Vector",
                 line=dict(color="#06b6d4", width=3, dash="dash")
             ))
-            # Draw working tracking node point
             fig.add_trace(go.Scatter3d(
                 x=[d["x"]], y=[d["y"]], z=[vehicle_alt],
                 mode="markers",
@@ -359,11 +354,12 @@ with step_tabs[3]:
                 marker=dict(size=9, color="#06b6d4", symbol='square')
             ))
 
+    # FIXED: Restructured nested layout dictionary parameters cleanly inside their properties loops
     fig.update_layout(
         margin=dict(l=0, r=0, b=0, t=0), height=550,
         scene=dict(
             xaxis=dict(title="UTM East (m)", backgroundcolor="#0b0f19", gridcolor="#1e293b", showbackground=True, titlefont=dict(color="#94a3b8"), tickfont=dict(color="#94a3b8")),
-            yaxis=dict(title="UTM North (m)", backgroundcolor="#0b0f19", gridcolor="#1e293b", showbackground=True),titlefont=dict(color="#94a3b8"), tickfont=dict(color="#94a3b8"),
+            yaxis=dict(title="UTM North (m)", backgroundcolor="#0b0f19", gridcolor="#1e293b", showbackground=True, titlefont=dict(color="#94a3b8"), tickfont=dict(color="#94a3b8")),
             zaxis=dict(title="Seabed Elevation Depth (m)", autorange="reversed", backgroundcolor="#0b0f19", gridcolor="#1e293b", showbackground=True, titlefont=dict(color="#94a3b8"), tickfont=dict(color="#94a3b8")),
             camera=dict(eye=dict(x=1.4, y=-1.4, z=1.0))
         ),
