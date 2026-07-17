@@ -55,7 +55,7 @@ st.markdown("""
         }
         .stTabs [aria-selected="true"] { background-color: #0284c7 !important; color: white !important; }
     </style>
-""", unsafe html=True)
+""", unsafe_allow_html=True)
 
 # Application Banner Headers
 st.title("🛡️ MRSIF | DEEPWATER OPERATIONAL COMMAND SURFACE")
