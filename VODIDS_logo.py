@@ -94,18 +94,30 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# VODIDS High-Fidelity Corporate Product Banner Insertion
-st.markdown("""
-    <div style="background-color: #1e293b; padding: 20px; border-radius: 8px; border-left: 6px solid #06b6d4; margin-bottom: 25px;">
-        <h1 style="margin: 0; font-family: 'Courier New', monospace; color: #f1f5f9; letter-spacing: 2px;">▲ VODIDS</h1>
-        <p style="margin: 5px 0 0 0; font-size: 14px; color: #06b6d4; font-weight: bold; letter-spacing: 1px;">
-            VIKRA OCEAN DIGITAL DATA SOLUTIONS // ADVANCED COMPUTING
-        </p>
-        <p style="margin: 2px 0 0 0; font-size: 12px; color: #94a3b8; font-style: italic;">
-            Powering the Marine Robotics Subsea Intelligence Framework (MRSIF)
-        </p>
-    </div>
-""", unsafe_allow_html=True)
+# Main Screen Header Container: Two column layout for text and alignment logo
+banner_bg = st.container()
+with banner_bg:
+    col_text, col_logo = st.columns([3, 1])
+    with col_text:
+        st.markdown("""
+            <div style="background-color: #1e293b; padding: 20px; border-radius: 8px 0px 0px 8px; border-left: 6px solid #06b6d4; height: 160px;">
+                <h1 style="margin: 0; font-family: 'Courier New', monospace; color: #f1f5f9; letter-spacing: 2px;">▲ VODIDS</h1>
+                <p style="margin: 5px 0 0 0; font-size: 14px; color: #06b6d4; font-weight: bold; letter-spacing: 1px;">
+                    VIKRA OCEAN DIGITAL DATA SOLUTIONS // ADVANCED COMPUTING
+                </p>
+                <p style="margin: 2px 0 0 0; font-size: 12px; color: #94a3b8; font-style: italic;">
+                    Powering the Marine Robotics Subsea Intelligence Framework (MRSIF)
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
+    with col_logo:
+        # Pushes image down slightly to align inside the dark command box styling
+        st.markdown('<div style="background-color: #1e293b; padding: 10px 20px 10px 10px; border-radius: 0px 8px 8px 0px; height: 160px; display: flex; align-items: center; justify-content: center;">', unsafe_allow_html=True)
+        try:
+            st.image("./VODIDS.png", width=160)
+        except Exception as e:
+            st.caption("📷 Image alignment mapping active")
+        st.markdown('</div>', unsafe_allow_html=True)
 
 for key in ["f1", "f2", "f3", "d1", "d2", "d3"]:
     if key not in st.session_state:
@@ -114,7 +126,6 @@ for key in ["f1", "f2", "f3", "d1", "d2", "d3"]:
 # ====================================================================
 # 4. CONTROL PANEL & LIVE SENSOR INPUTS
 # ====================================================================
-# High-Fidelity VODIDS Visual Identity Sidebar Core
 st.sidebar.markdown(
     """
     <div style="text-align: center; padding-bottom: 10px;">
@@ -124,13 +135,6 @@ st.sidebar.markdown(
     """, 
     unsafe_allow_html=True
 )
-
-# Render the PNG locally from the main folder path
-try:
-    st.sidebar.image("./VODIDS.png", use_container_width=True)
-except Exception as e:
-    st.sidebar.caption("📷 VODIDS System Graphic Engine Active")
-
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🎛️ TARGET NODE INGESTION")
 selected_tag = st.sidebar.selectbox("Active Field Equipment Tag", list(ACTIVE_FIELD_TAGS.keys()))
@@ -153,12 +157,10 @@ tag_meta = ACTIVE_FIELD_TAGS[selected_tag]
 class_code = tag_meta["class_code"]
 class_definition = CFIHOS_REFERENCE_LIBRARY[class_code]
 
-# 1. Build Header
 header_block = MrsifUpdateHeader(
     timestamp_utc=datetime.utcnow().isoformat() + "Z"
 )
 
-# 2. Build Asset Identity Block with SHA-256 Unique Global ID
 vehicle_string = f"VOT-WORKCLASS-ROV-{tag_meta['serial']}"
 vehicle_hash = hashlib.sha256(vehicle_string.encode('utf-8')).hexdigest()[:16].upper()
 identity_block = AssetIdentityBlock(
@@ -168,26 +170,22 @@ identity_block = AssetIdentityBlock(
     power_configuration_type="3000V_AC_SURFACE_UMBILICAL"
 )
 
-# 3. Build Navigation Sensor Arrays
 nav_sensors = [
     NavSensor(sensor_id="SN-DVL-8821", sensor_type="Doppler Velocity Log", cfihos_tag="50-NX-601", last_calibration_date="2026-03-12"),
     NavSensor(sensor_id="SN-INS-0441", sensor_type="Inertial Navigation System", cfihos_tag="50-NX-602", last_calibration_date="2026-05-19")
 ]
 
-# 4. Build Embedded Subsystems
 subsystems_block = EmbeddedSubsystems(
     measured_latency_ms=measured_latency,
     default_nav_sensors=nav_sensors,
     imca_pilot_competency="IMCA-Class-1-Senior (1250 Hrs)"
 )
 
-# 5. Populate Core Telemetry Map Mapped to CFIHOS Codes
 live_telemetry_map = {
     "CFIHOS-30000561": measured_torque,    
     "CFIHOS-30000894": measured_pressure,  
 }
 
-# 6. Instantiate Unified Master Payload Structure
 runtime_payload = LiveInterventionPayload(
     mrsif_header=header_block,
     asset_identity=identity_block,
@@ -196,7 +194,6 @@ runtime_payload = LiveInterventionPayload(
     runtime_telemetry_stream=live_telemetry_map
 )
 
-# Gate check equations
 function_test_completed = st.session_state.f1 and st.session_state.f2 and st.session_state.f3
 deck_test_completed = st.session_state.d1 and st.session_state.d2 and st.session_state.d3
 metocean_passed = metocean_current <= 1.5
@@ -251,7 +248,6 @@ step_tabs = st.tabs([
     "📊 5. Unified Nested Handover Package"
 ])
 
-# TAB 1: CONNECTED HIERARCHICAL RESOLVER VIEW
 with step_tabs[0]:
     st.markdown("### 📋 Runtime Hierarchical Schema Parsing Loop")
     col_info, col_json = st.columns([1, 1])
@@ -275,7 +271,6 @@ with step_tabs[0]:
         st.markdown("#### Live Pydantic Nested Object Payload")
         st.json(runtime_payload.model_dump())
 
-# TAB 2: ATTESTATION
 with step_tabs[1]:
     st.markdown("### 🔬 Mission Method Verification Logs")
     st.checkbox("Verify Work Class ROV telemetry and communication paths", key="f1")
@@ -283,7 +278,6 @@ with step_tabs[1]:
     st.checkbox("Perform dry pressure testing on Dual Port Hot Stab system (Rated to 10,000 PSI)", key="f3")
     if function_test_completed: st.success("✅ PRE-MOBILIZATION TESTING CLEARED")
 
-# TAB 3: DECK TEST
 with step_tabs[2]:
     st.markdown("### 🏗️ Rigging & Mobilization Compliance Gates")
     if not function_test_completed:
@@ -294,7 +288,6 @@ with step_tabs[2]:
         st.checkbox("Verify ground fault monitoring systems (GFI) display clear green loops on power up", key="d3")
         if is_safe: st.success("🚀 DEPLOYMENT COMPLIANCE CLEARANCE APPLIED")
 
-# TAB 4: LIVE SPATIAL TWIN
 with step_tabs[3]:
     st.markdown(f"### 🌐 Real-Time Spatial Grid Alignment Target: {runtime_payload.functional_tag}")
     X_floor = np.linspace(0, 100, 25)
@@ -326,14 +319,12 @@ with step_tabs[3]:
     )
     st.plotly_chart(fig, use_container_width=True)
 
-# TAB 5: NESTED HANDOVER
 with step_tabs[4]:
     st.markdown("### 📊 Consolidated Hierarchical Outgestion Package (CFIHOS/OSDU Format)")
     if not is_safe:
         st.warning("⚠️ System Hold: Compliance signatures and outgestion packages are locked until gate constraints are satisfied.")
     else:
         st.success("🏁 EXPORT STREAM STABILIZED: NESTED MODEL COMPLETELY DOCUMENTED")
-        
         st.json({
             "handover_format_version": "CFIHOS_V1.5 // OSDU_R3_COMPLIANT",
             "compiled_payload": runtime_payload.model_dump()
