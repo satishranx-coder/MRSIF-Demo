@@ -35,9 +35,9 @@ class EmbeddedSubsystems(BaseModel):
     imca_pilot_competency: str  # e.g., "IMCA-A-007 (900 hrs)"
 
 class LiveInterventionPayload(BaseModel):
-    mrsif_header= MrsifUpdateHeader
-    asset_identity= AssetIdentityBlock
-    subsystems= EmbeddedSubsystems
+    mrsif_header: MrsifUpdateHeader
+    asset_identity: AssetIdentityBlock
+    subsystems: EmbeddedSubsystems
     functional_tag: str
     runtime_telemetry_stream: dict = Field(default_factory=dict)
 
