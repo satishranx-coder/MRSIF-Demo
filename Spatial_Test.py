@@ -80,6 +80,7 @@ st.markdown("""
     <style>
         .reportview-container { background: #0b0f19; }
         
+        /* Targeted injection: Fixes only the branding text capsule to be bright and clear */
         .sidebar-brand-capsule {
             background-color: #1e293b !important;
             padding: 12px;
@@ -351,13 +352,31 @@ with step_tabs[3]:
                 marker=dict(size=9, color="#06b6d4", symbol='square')
             ))
 
-    # Corrected Layout Formatting Block
     fig.update_layout(
         margin=dict(l=0, r=0, b=0, t=0), height=550,
         scene=dict(
-            xaxis=dict(title="UTM East (m)", backgroundcolor="#0b0f19", gridcolor="#1e293b", showbackground=True, titlefont=dict(color="#94a3b8"), tickfont=dict(color="#94a3b8")),
-            yaxis=dict(title="UTM North (m)", backgroundcolor="#0b0f19", gridcolor="#1e293b", showbackground=True, titlefont=dict(color="#94a3b8"), tickfont=dict(color="#94a3b8")),
-            zaxis=dict(title="Seabed Elevation Depth (m)", autorange="reversed", backgroundcolor="#0b0f19", gridcolor="#1e293b", showbackground=True, titlefont=dict(color="#94a3b8"), tickfont=dict(color="#94a3b8")),
+            xaxis=dict(
+                title=dict(text="UTM East (m)", font=dict(color="#94a3b8")), 
+                backgroundcolor="#0b0f19", 
+                gridcolor="#1e293b", 
+                showbackground=True, 
+                tickfont=dict(color="#94a3b8")
+            ),
+            yaxis=dict(
+                title=dict(text="UTM North (m)", font=dict(color="#94a3b8")), 
+                backgroundcolor="#0b0f19", 
+                gridcolor="#1e293b", 
+                showbackground=True, 
+                tickfont=dict(color="#94a3b8")
+            ),
+            zaxis=dict(
+                title=dict(text="Seabed Elevation Depth (m)", font=dict(color="#94a3b8")), 
+                autorange="reversed", 
+                backgroundcolor="#0b0f19", 
+                gridcolor="#1e293b", 
+                showbackground=True, 
+                tickfont=dict(color="#94a3b8")
+            ),
             camera=dict(eye=dict(x=1.4, y=-1.4, z=1.0))
         ),
         paper_bgcolor="#0b0f19", plot_bgcolor="#0b0f19",
