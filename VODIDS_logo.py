@@ -83,15 +83,6 @@ st.markdown("""
         div[data-testid="stMetricValue"] { font-size: 32px !important; font-family: 'Courier New', Courier, monospace; font-weight: bold; }
         .stTabs [aria-selected="true"] { background-color: #0284c7 !important; color: white !important; }
         
-        /* Unified Banner Container Styling */
-        .unified-banner {
-            background-color: #1e293b;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 6px solid #06b6d4;
-            margin-bottom: 25px;
-        }
-        
         .metric-card {
             background-color: #1e293b;
             padding: 15px;
@@ -104,7 +95,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Unified Banner Layout: Text shifted right, graphic logo anchored left
+# Main Screen Corporate Row: Logo on left, single designated text string on right
 banner_bg = st.container()
 with banner_bg:
     col_logo, col_text = st.columns([1, 3])
@@ -118,18 +109,13 @@ with banner_bg:
         
     with col_text:
         st.markdown("""
-            <div style="background-color: #1e293b; padding: 20px; border-radius: 0px 8px 8px 0px; height: 160px;">
-                <h1 style="margin: 0; font-family: 'Courier New', monospace; color: #f1f5f9; letter-spacing: 2px;">▲ VODIDS</h1>
-                <p style="margin: 5px 0 0 0; font-size: 14px; color: #06b6d4; font-weight: bold; letter-spacing: 1px;">
-                    VIKRA OCEAN DIGITAL DATA SOLUTIONS // ADVANCED COMPUTING
-                </p>
-                <p style="margin: 2px 0 0 0; font-size: 12px; color: #94a3b8; font-style: italic;">
-                    Powering the Marine Robotics Subsea Intelligence Framework (MRSIF)
-                </p>
+            <div style="background-color: #1e293b; padding: 20px; border-radius: 0px 8px 8px 0px; height: 160px; display: flex; align-items: center; vertical-align: middle;">
+                <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #f1f5f9; letter-spacing: 1px;">
+                    VODIDS - MRSIFramework Version 1.2
+                </h2>
             </div>
         """, unsafe_allow_html=True)
 
-# Align the negative spatial displacement box for proper screen tracking
 with col_logo:
     st.markdown('<div style="margin-top: -160px; position: relative; z-index: 999;"></div>', unsafe_allow_html=True)
 
@@ -140,13 +126,12 @@ for key in ["f1", "f2", "f3", "d1", "d2", "d3"]:
         st.session_state[key] = False
 
 # ====================================================================
-# 4. CONTROL PANEL & LIVE SENSOR INPUTS
+# 4. CONTROL PANEL & LIVE SENSOR INPUTS (LEFT SIDEBAR ONLY WORD DISPLAY)
 # ====================================================================
 st.sidebar.markdown(
     """
     <div style="text-align: center; padding-bottom: 10px;">
-        <h3 style="margin: 0; font-family: 'Courier New', monospace; color: #06b6d4; letter-spacing: 3px;">▲ VODIDS</h3>
-        <p style="margin: 0; font-size: 11px; color: #94a3b8; font-style: italic;">ADVANCED SUBSEA COMPUTING</p>
+        <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #06b6d4; letter-spacing: 2px;">VODIDS Ver 1.2</h2>
     </div>
     """, 
     unsafe_allow_html=True
