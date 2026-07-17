@@ -82,6 +82,16 @@ st.markdown("""
         .stMarkdown h1, h2, h3 { color: #f1f5f9 !important; font-family: 'Courier New', Courier, monospace; }
         div[data-testid="stMetricValue"] { font-size: 32px !important; font-family: 'Courier New', Courier, monospace; font-weight: bold; }
         .stTabs [aria-selected="true"] { background-color: #0284c7 !important; color: white !important; }
+        
+        /* Unified Banner Container Styling */
+        .unified-banner {
+            background-color: #1e293b;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 6px solid #06b6d4;
+            margin-bottom: 25px;
+        }
+        
         .metric-card {
             background-color: #1e293b;
             padding: 15px;
@@ -94,30 +104,43 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Main Screen Header Container: Two column layout for text and alignment logo
-banner_bg = st.container()
-with banner_bg:
-    col_text, col_logo = st.columns([3, 1])
-    with col_text:
-        st.markdown("""
-            <div style="background-color: #1e293b; padding: 20px; border-radius: 8px 0px 0px 8px; border-left: 6px solid #06b6d4; height: 160px;">
-                <h1 style="margin: 0; font-family: 'Courier New', monospace; color: #f1f5f9; letter-spacing: 2px;">▲ VODIDS</h1>
-                <p style="margin: 5px 0 0 0; font-size: 14px; color: #06b6d4; font-weight: bold; letter-spacing: 1px;">
-                    VIKRA OCEAN DIGITAL DATA SOLUTIONS // ADVANCED COMPUTING
-                </p>
-                <p style="margin: 2px 0 0 0; font-size: 12px; color: #94a3b8; font-style: italic;">
-                    Powering the Marine Robotics Subsea Intelligence Framework (MRSIF)
-                </p>
-            </div>
-        """, unsafe_allow_html=True)
-    with col_logo:
-        # Pushes image down slightly to align inside the dark command box styling
-        st.markdown('<div style="background-color: #1e293b; padding: 10px 20px 10px 10px; border-radius: 0px 8px 8px 0px; height: 160px; display: flex; align-items: center; justify-content: center;">', unsafe_allow_html=True)
-        try:
-            st.image("./VODIDS.png", width=160)
-        except Exception as e:
-            st.caption("📷 Image alignment mapping active")
-        st.markdown('</div>', unsafe_allow_html=True)
+# Unified High-Fidelity Header Block (Eliminating the disjointed column gap)
+with st.container():
+    st.markdown("""
+        <div class="unified-banner">
+            <table style="width:100%; border:none; border-collapse:collapse; background:transparent;">
+                <tr style="background:transparent; border:none;">
+                    <td style="width:75%; text-align:left; vertical-align:middle; border:none; background:transparent; padding:0;">
+                        <h1 style="margin: 0; font-family: 'Courier New', monospace; color: #f1f5f9; letter-spacing: 2px;">▲ VODIDS</h1>
+                        <p style="margin: 5px 0 0 0; font-size: 14px; color: #06b6d4; font-weight: bold; letter-spacing: 1px;">
+                            VIKRA OCEAN DIGITAL DATA SOLUTIONS // ADVANCED COMPUTING
+                        </p>
+                        <p style="margin: 2px 0 0 0; font-size: 12px; color: #94a3b8; font-style: italic;">
+                            Powering the Marine Robotics Subsea Intelligence Framework (MRSIF)
+                        </p>
+                    </td>
+                    <td style="width:25%; text-align:right; vertical-align:middle; border:none; background:transparent; padding:0;">
+                        <!-- Streamlit image injection target wrapper -->
+                        <div id="logo-target"></div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    """, unsafe_allow_html=True)
+
+# Contextually place image inside the right-aligned container zone seamlessly
+col_space1, col_space2 = st.columns([3, 1])
+with col_space2:
+    # Invisible placeholder shift to position image inside the header grid boundary
+    st.markdown('<div style="margin-top: -165px; text-align: right; padding-right: 20px; position: relative; z-index: 999;">', unsafe_allow_html=True)
+    try:
+        st.image("./VODIDS.png", width=140)
+    except Exception as e:
+        st.caption("📷 Layout Engine Active")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# Clear structural formatting spacing
+st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
 
 for key in ["f1", "f2", "f3", "d1", "d2", "d3"]:
     if key not in st.session_state:
