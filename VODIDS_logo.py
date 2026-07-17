@@ -9,7 +9,7 @@ from typing import List, Optional
 from datetime import datetime
 
 # ====================================================================
-# 1. UPGRADED NESTED COMPLIANCE SCHEMAS (MRSIF ADVANCED DATA CORE)
+# 1. NESTED COMPLIANCE SCHEMAS
 # ====================================================================
 class MrsifUpdateHeader(BaseModel):
     thread_id: str = "TH-2026-9941A"
@@ -17,7 +17,7 @@ class MrsifUpdateHeader(BaseModel):
     submitting_company_id: str = "VIKRA_OCEAN_TECH"
 
 class AssetIdentityBlock(BaseModel):
-    vehicle_global_id: str  # Hash of Manufacturer + Model + Serial
+    vehicle_global_id: str
     imca_unique_id: str
     cfihos_equipment_class: str
     power_configuration_type: str
@@ -32,7 +32,7 @@ class EmbeddedSubsystems(BaseModel):
     telemetry_primary_link: str = "FIBER_OPTIC"
     measured_latency_ms: float
     default_nav_sensors: List[NavSensor]
-    imca_pilot_competency: str  # e.g., "IMCA-A-007 (900 hrs)"
+    imca_pilot_competency: str
 
 class LiveInterventionPayload(BaseModel):
     mrsif_header: MrsifUpdateHeader
@@ -42,7 +42,7 @@ class LiveInterventionPayload(BaseModel):
     runtime_telemetry_stream: dict = Field(default_factory=dict)
 
 # ====================================================================
-# 2. PERMANENT REFERENCE LIBRARY & METADATA DICTIONARIES
+# 2. REFERENCE DICTIONARIES
 # ====================================================================
 CFIHOS_REFERENCE_LIBRARY = {
     "CFIHOS-10000284": {
@@ -67,7 +67,7 @@ ACTIVE_FIELD_TAGS = {
 }
 
 # ====================================================================
-# 3. INTERFACE INITIALIZATION & LAYOUT
+# 3. INTERFACE INITIALIZATION & REFINED PRESENTATION CSS
 # ====================================================================
 st.set_page_config(
     page_title="MRSIF | Connected CFIHOS Engine",
@@ -76,39 +76,31 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Deep Injection CSS to force theme global text properties visible over Streamlit base styling rules
 st.markdown("""
     <style>
+        /* Restores clean dark background structure without overriding internal markdown logic */
         .reportview-container { background: #0b0f19; }
         
-        /* Forces Main Application Titles and Headers to remain White at all times without hover states */
-        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4 { 
-            color: #ffffff !important; 
-            font-family: 'Courier New', Courier, monospace !important; 
+        /* Targeted injection: Fixes only the branding text capsule to be bright and clear */
+        .sidebar-brand-capsule {
+            background-color: #1e293b !important;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #334155;
+            margin-top: 10px;
+            margin-bottom: 10px;
         }
         
-        /* Fixes Sidebar specific custom element visibility bugs */
-        [data-testid="stSidebar"] {
-            background-color: #0b0f19 !important;
-        }
-        
-        /* Direct targeting rules for the sidebar title text container */
-        .sidebar-brand-box {
-            background-color: #1e293b !important; 
-            padding: 15px; 
-            border-radius: 6px; 
-            text-align: center; 
-            border: 1px solid #06b6d4;
-            margin-bottom: 20px;
-        }
-        
-        .sidebar-brand-box span {
-            color: #ffffff !important;
-            font-size: 20px !important;
+        .sidebar-brand-capsule span {
+            color: #f8fafc !important;
+            font-family: 'Courier New', Courier, monospace !important;
+            font-size: 18px !important;
             font-weight: bold !important;
-            font-family: 'Courier New', monospace !important;
+            letter-spacing: 1px;
         }
-
+        
+        /* Metric dashboard framework stability elements */
         div[data-testid="stMetricValue"] { font-size: 32px !important; font-family: 'Courier New', Courier, monospace; font-weight: bold; }
         .stTabs [aria-selected="true"] { background-color: #0284c7 !important; color: white !important; }
         
@@ -124,10 +116,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Main Header Container (Centered Title text)
+# Presentable Clean Main Centralized Header Container
 st.markdown("""
-    <div style="background-color: #1e293b; padding: 30px 20px; border-radius: 8px; border-left: 6px solid #06b6d4; margin-bottom: 25px; text-align: center;">
-        <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #ffffff !important; letter-spacing: 1px;">
+    <div style="background-color: #1e293b; padding: 25px 20px; border-radius: 8px; border-left: 6px solid #06b6d4; margin-bottom: 25px; text-align: center;">
+        <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #f1f5f9; letter-spacing: 1px;">
             VODIDS - MRSIFramework Version 1.2
         </h2>
     </div>
@@ -138,22 +130,23 @@ for key in ["f1", "f2", "f3", "d1", "d2", "d3"]:
         st.session_state[key] = False
 
 # ====================================================================
-# 4. CONTROL PANEL & SIDEBAR (FORCED VISIBILITY CONFIGURATION)
+# 4. CONTROL PANEL & SIDEBAR LAYOUT
 # ====================================================================
 try:
     st.sidebar.image("./VODIDS.png", use_container_width=True)
 except Exception as e:
     pass
 
-# Embedded via explicit clean HTML class selector ensuring visibility bypasses Streamlit UI limitations
+# Isolated container to maintain high visibility white text against the dark theme background
 st.sidebar.markdown(
     """
-    <div class="sidebar-brand-box">
+    <div class="sidebar-brand-capsule">
         <span>VODIDS Ver 1.2</span>
     </div>
     """, 
     unsafe_allow_html=True
 )
+
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🎛️ TARGET NODE INGESTION")
 selected_tag = st.sidebar.selectbox("Active Field Equipment Tag", list(ACTIVE_FIELD_TAGS.keys()))
@@ -229,7 +222,7 @@ with status_col1:
     st.markdown(f"""
         <div class="{card_style}">
             <h5 style='margin:0; color:#94a3b8;'>Metocean Threshold</h5>
-            <h2 style='margin:5px 0; color:#ffffff !important;'>{metocean_current} kts</h2>
+            <h2 style='margin:5px 0;'>{metocean_current} kts</h2>
             <p style='margin:0; font-size:12px; color:#94a3b8;'>Limit: 1.5 kts Max Drag</p>
         </div>
     """, unsafe_allow_html=True)
@@ -241,7 +234,7 @@ with status_col2:
     st.markdown(f"""
         <div class="{card_style}">
             <h5 style='margin:0; color:#94a3b8;'>Intervention Delivery Torque</h5>
-            <h2 style='margin:5px 0; color:#ffffff !important;'>{measured_torque if class_code == "CFIHOS-10000284" else 'N/A'} Nm</h2>
+            <h2 style='margin:5px 0;'>{measured_torque if class_code == "CFIHOS-10000284" else 'N/A'} Nm</h2>
             <p style='margin:0; font-size:12px; color:#94a3b8;'>CFIHOS Limit: {torque_limit} Nm</p>
         </div>
     """, unsafe_allow_html=True)
@@ -252,7 +245,7 @@ with status_col3:
     st.markdown(f"""
         <div class="{card_style}">
             <h5 style='margin:0; color:#94a3b8;'>Framework Integrity Gate</h5>
-            <h2 style='margin:5px 0; color:#ffffff !important;'>{status_text}</h2>
+            <h2 style='margin:5px 0;'>{status_text}</h2>
             <p style='margin:0; font-size:12px; color:#94a3b8;'>All Pre-requisites & Checks</p>
         </div>
     """, unsafe_allow_html=True)
@@ -272,20 +265,20 @@ with step_tabs[0]:
     col_info, col_json = st.columns([1, 1])
     with col_info:
         st.markdown("#### Mapped Identity Parameters")
-        st.markdown(f"* **Target Tag Assignment:** `{runtime_payload.functional_tag}`")
-        st.markdown(f"* **Resolved Equipment Class:** `{runtime_payload.asset_identity.cfihos_equipment_class} ({class_definition['class_name']})`")
-        st.markdown(f"* **Global Vehicle Verification ID:** `{runtime_payload.asset_identity.vehicle_global_id}`")
-        st.markdown(f"* **IMCA Registry Link:** `{runtime_payload.asset_identity.imca_unique_id}`")
+        st.write(f"* **Target Tag Assignment:** `{runtime_payload.functional_tag}`")
+        st.write(f"* **Resolved Equipment Class:** `{runtime_payload.asset_identity.cfihos_equipment_class} ({class_definition['class_name']})`")
+        st.write(f"* **Global Vehicle Verification ID:** `{runtime_payload.asset_identity.vehicle_global_id}`")
+        st.write(f"* **IMCA Registry Link:** `{runtime_payload.asset_identity.imca_unique_id}`")
         
         st.markdown("#### System Link Telemetry")
-        st.markdown(f"* **Primary Control Tether:** `{runtime_payload.subsystems.telemetry_primary_link}`")
-        st.markdown(f"* **Runtime Ping Latency:** `{runtime_payload.subsystems.measured_latency_ms} ms`")
-        st.markdown(f"* **Pilot Competency Profile:** `{runtime_payload.subsystems.imca_pilot_competency}`")
+        st.write(f"* **Primary Control Tether:** `{runtime_payload.subsystems.telemetry_primary_link}`")
+        st.write(f"* **Runtime Ping Latency:** `{runtime_payload.subsystems.measured_latency_ms} ms`")
+        st.write(f"* **Pilot Competency Profile:** `{runtime_payload.subsystems.imca_pilot_competency}`")
 
         st.markdown("#### Active Telemetry Registries")
         for prop_id, prop_data in class_definition["properties"].items():
             live_value = live_telemetry_map.get(prop_id, prop_data["default"])
-            st.markdown(f"* `{prop_id}` **{prop_data['name']}:** `{live_value} {prop_data['unit']}`")
+            st.write(f"* `{prop_id}` **{prop_data['name']}:** `{live_value} {prop_data['unit']}`")
     with col_json:
         st.markdown("#### Live Pydantic Nested Object Payload")
         st.json(runtime_payload.model_dump())
