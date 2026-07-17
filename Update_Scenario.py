@@ -20,9 +20,10 @@ class EPCIWorkOrder(BaseModel):
     subsea_asset: str = "XMAS Tree (XT-04)"
     location: str = "Gabon, West Africa"
     water_depth_m: float = 500.0
+    task_description: str = "Hot Stab Valve Opening Operation"  # <-- ADD THIS LINE
     tooling_standard: str = "ISO 13628-8 Hot Stab Type A"
     max_current_limit_kts: float = 1.5
-
+    
 SUBSEA_ASSETS = {
     "CHEV-1_XMAS_TREE_XT04": {"x": 50.0, "y": 0.0, "z": 500.0, "type": "XMAS Tree Valve", "color": "#f59e0b"},
     "MANIFOLD-GABON-A": {"x": 15.0, "y": -15.0, "z": 505.0, "type": "Subsea Manifold", "color": "#06b6d4"},
