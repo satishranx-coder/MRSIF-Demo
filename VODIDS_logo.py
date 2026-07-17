@@ -95,31 +95,20 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Main Screen Corporate Row: Logo on left, single designated text string on right
-banner_bg = st.container()
-with banner_bg:
-    col_logo, col_text = st.columns([1, 3])
-    with col_logo:
-        st.markdown('<div style="background-color: #1e293b; padding: 10px 10px 10px 20px; border-radius: 8px 0px 0px 8px; height: 160px; display: flex; align-items: center; justify-content: center;">', unsafe_allow_html=True)
-        try:
-            st.image("./VODIDS.png", width=140)
-        except Exception as e:
-            st.caption("📷 Left Logo Engine Active")
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-    with col_text:
-        st.markdown("""
-            <div style="background-color: #1e293b; padding: 20px; border-radius: 0px 8px 8px 0px; height: 160px; display: flex; align-items: center; vertical-align: middle;">
+# Unified Markdown Injected Grid (Logo Left, Text Right Inside 1 Element Container)
+st.markdown("""
+    <div style="background-color: #1e293b; padding: 15px 20px; border-radius: 8px; border-left: 6px solid #06b6d4; margin-bottom: 25px;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <img src="./app/static/VODIDS.png" style="width: 130px; height: auto; border-radius: 4px;" 
+                 onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/satish-ramachandran-vikra/mrsif-demo/main/VODIDS.png';">
+            <div>
                 <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #f1f5f9; letter-spacing: 1px;">
                     VODIDS - MRSIFramework Version 1.2
                 </h2>
             </div>
-        """, unsafe_allow_html=True)
-
-with col_logo:
-    st.markdown('<div style="margin-top: -160px; position: relative; z-index: 999;"></div>', unsafe_allow_html=True)
-
-st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
 for key in ["f1", "f2", "f3", "d1", "d2", "d3"]:
     if key not in st.session_state:
