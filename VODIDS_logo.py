@@ -95,20 +95,12 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Perfectly Centered Layout: Logo Far Left, Text Positioned Center-Screen
+# Main Header Container: 100% Text, No Image Tags Inside
 st.markdown("""
-    <div style="background-color: #1e293b; padding: 15px 20px; border-radius: 8px; border-left: 6px solid #06b6d4; margin-bottom: 25px; position: relative; min-height: 100px; display: flex; align-items: center;">
-        <!-- Logo on the most left -->
-        <div style="position: absolute; left: 20px;">
-            <img src="./app/static/VODIDS.png" style="width: 120px; height: auto; border-radius: 4px;" 
-                 onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/satish-ramachandran-vikra/mrsif-demo/main/VODIDS.png';">
-        </div>
-        <!-- Header Text Centered globally in the container -->
-        <div style="width: 100%; text-align: center;">
-            <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #f1f5f9; letter-spacing: 1px;">
-                VODIDS - MRSIFramework Version 1.2
-            </h2>
-        </div>
+    <div style="background-color: #1e293b; padding: 30px 20px; border-radius: 8px; border-left: 6px solid #06b6d4; margin-bottom: 25px; text-align: center;">
+        <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #f1f5f9; letter-spacing: 1px;">
+            VODIDS - MRSIFramework Version 1.2
+        </h2>
     </div>
 """, unsafe_allow_html=True)
 
@@ -117,12 +109,18 @@ for key in ["f1", "f2", "f3", "d1", "d2", "d3"]:
         st.session_state[key] = False
 
 # ====================================================================
-# 4. CONTROL PANEL & LIVE SENSOR INPUTS (LEFT SIDEBAR ONLY WORD DISPLAY)
+# 4. CONTROL PANEL & SIDEBAR (LOGO PLACED HERE RIGIDLY)
 # ====================================================================
+# Logo injected safely at the absolute top of the sidebar controls
+try:
+    st.sidebar.image("./VODIDS.png", use_container_width=True)
+except Exception as e:
+    pass
+
 st.sidebar.markdown(
     """
-    <div style="text-align: center; padding-bottom: 10px;">
-        <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #06b6d4; letter-spacing: 2px;">VODIDS Ver 1.2</h2>
+    <div style="text-align: center; padding-top: 10px; padding-bottom: 15px;">
+        <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #06b6d4; letter-spacing: 2px; font-size: 22px;">VODIDS Ver 1.2</h2>
     </div>
     """, 
     unsafe_allow_html=True
