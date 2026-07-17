@@ -109,20 +109,20 @@ for key in ["f1", "f2", "f3", "d1", "d2", "d3"]:
         st.session_state[key] = False
 
 # ====================================================================
-# 4. CONTROL PANEL & SIDEBAR (WITH HIGH-VISIBILITY COLOR ACCENTS)
+# 4. CONTROL PANEL & SIDEBAR (FORCED STATIC VISIBILITY OVER STREAMLIT THEME)
 # ====================================================================
 try:
     st.sidebar.image("./VODIDS.png", use_container_width=True)
 except Exception as e:
     pass
 
-# Upgraded inline styles to force solid color over default sidebar transparency
+# Using a styled container div with strict text color overrides to force visibility
 st.sidebar.markdown(
     """
-    <div style="text-align: center; padding-top: 15px; padding-bottom: 15px;">
-        <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #06b6d4 !important; opacity: 1.0 !important; letter-spacing: 2px; font-size: 24px; font-weight: bold;">
+    <div style="background-color: #1e293b; padding: 12px; border-radius: 6px; text-align: center; margin-top: 15px; margin-bottom: 15px; border: 1px solid #334155;">
+        <span style="font-family: 'Courier New', monospace; color: #ffffff !important; font-size: 20px; font-weight: bold; letter-spacing: 1px; display: block;">
             VODIDS Ver 1.2
-        </h2>
+        </span>
     </div>
     """, 
     unsafe_allow_html=True
