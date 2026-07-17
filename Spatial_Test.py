@@ -351,7 +351,7 @@ with step_tabs[3]:
                 marker=dict(size=9, color="#06b6d4", symbol='square')
             ))
 
-    # FIXED: Re-mapped yaxis properties correctly inside the dict statement block
+    # Corrected Layout Formatting Block
     fig.update_layout(
         margin=dict(l=0, r=0, b=0, t=0), height=550,
         scene=dict(
