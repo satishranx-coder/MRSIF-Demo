@@ -94,6 +94,44 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# ====================================================================
+# 3. INTERFACE INITIALIZATION & LAYOUT
+# ====================================================================
+# [Keep your existing st.set_page_config and st.markdown CSS blocks here]
+
+# High-Fidelity VODIDS Visual Identity Sidebar Core
+st.sidebar.markdown(
+    """
+    <div style="text-align: center; padding-bottom: 10px;">
+        <h3 style="margin: 0; font-family: 'Courier New', monospace; color: #06b6d4; letter-spacing: 3px;">▲ VODIDS</h3>
+        <p style="margin: 0; font-size: 11px; color: #94a3b8; font-style: italic;">ADVANCED SUBSEA COMPUTING</p>
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
+
+# Render the image locally from the root folder
+try:
+    st.sidebar.image("VODIDS.jpg", use_container_width=True)
+except Exception as e:
+    st.sidebar.caption("📷 VODIDS System Graphic Engine Active")
+
+st.sidebar.markdown("---")
+
+# High-Fidelity VODIDS Visual Identity Sidebar Core
+st.sidebar.markdown(
+    """
+    <div style="text-align: center; padding-bottom: 10px;">
+        <h3 style="margin: 0; font-family: 'Courier New', monospace; color: #06b6d4; letter-spacing: 3px;">▲ VODIDS</h3>
+        <p style="margin: 0; font-size: 11px; color: #94a3b8; font-style: italic;">ADVANCED SUBSEA COMPUTING</p>
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
+# If you place VODIDS.jpg in your GitHub repo root, you can display it here:
+# st.sidebar.image("VODIDS.jpg", use_container_width=True)
+st.sidebar.markdown("---")
+
 # VODIDS High-Fidelity Corporate Product Banner Insertion
 st.markdown("""
     <div style="background-color: #1e293b; padding: 20px; border-radius: 8px; border-left: 6px solid #06b6d4; margin-bottom: 25px;">
