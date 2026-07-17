@@ -78,7 +78,6 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* Restores clean dark background structure without overriding internal markdown logic */
         .reportview-container { background: #0b0f19; }
         
         /* Targeted injection: Fixes only the branding text capsule to be bright and clear */
@@ -100,10 +99,10 @@ st.markdown("""
             letter-spacing: 1px;
         }
         
-        /* Metric dashboard framework stability elements */
         div[data-testid="stMetricValue"] { font-size: 32px !important; font-family: 'Courier New', Courier, monospace; font-weight: bold; }
         .stTabs [aria-selected="true"] { background-color: #0284c7 !important; color: white !important; }
         
+        /* Unified Metric Cards Layout Configuration */
         .metric-card {
             background-color: #1e293b;
             padding: 15px;
@@ -113,10 +112,16 @@ st.markdown("""
         }
         .metric-card.error { border-left: 5px solid #ef4444; }
         .metric-card.success { border-left: 5px solid #10b981; }
+        
+        /* FIX: Forces all real-time labels, numbers, and limit text elements to be high-contrast white */
+        .metric-card h5, .metric-card h2, .metric-card p {
+            color: #ffffff !important;
+            opacity: 1.0 !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
-# Presentable Clean Main Centralized Header Container
+# Main Centralized Header Container
 st.markdown("""
     <div style="background-color: #1e293b; padding: 25px 20px; border-radius: 8px; border-left: 6px solid #06b6d4; margin-bottom: 25px; text-align: center;">
         <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #f1f5f9; letter-spacing: 1px;">
@@ -137,7 +142,6 @@ try:
 except Exception as e:
     pass
 
-# Isolated container to maintain high visibility white text against the dark theme background
 st.sidebar.markdown(
     """
     <div class="sidebar-brand-capsule">
@@ -221,9 +225,9 @@ with status_col1:
     card_style = "metric-card success" if metocean_passed else "metric-card error"
     st.markdown(f"""
         <div class="{card_style}">
-            <h5 style='margin:0; color:#94a3b8;'>Metocean Threshold</h5>
-            <h2 style='margin:5px 0;'>{metocean_current} kts</h2>
-            <p style='margin:0; font-size:12px; color:#94a3b8;'>Limit: 1.5 kts Max Drag</p>
+            <h5 style='margin:0; font-family: sans-serif;'>Metocean Threshold</h5>
+            <h2 style='margin:5px 0; font-family: monospace;'>{metocean_current} kts</h2>
+            <p style='margin:0; font-size:12px;'>Limit: 1.5 kts Max Drag</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -233,9 +237,9 @@ with status_col2:
     card_style = "metric-card success" if torque_passed else "metric-card error"
     st.markdown(f"""
         <div class="{card_style}">
-            <h5 style='margin:0; color:#94a3b8;'>Intervention Delivery Torque</h5>
-            <h2 style='margin:5px 0;'>{measured_torque if class_code == "CFIHOS-10000284" else 'N/A'} Nm</h2>
-            <p style='margin:0; font-size:12px; color:#94a3b8;'>CFIHOS Limit: {torque_limit} Nm</p>
+            <h5 style='margin:0; font-family: sans-serif;'>Intervention Delivery Torque</h5>
+            <h2 style='margin:5px 0; font-family: monospace;'>{measured_torque if class_code == "CFIHOS-10000284" else 'N/A'} Nm</h2>
+            <p style='margin:0; font-size:12px;'>CFIHOS Limit: {torque_limit} Nm</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -244,9 +248,9 @@ with status_col3:
     status_text = "EXECUTION PERMITTED" if is_safe else "SAFETY SYSTEM LOCKED"
     st.markdown(f"""
         <div class="{card_style}">
-            <h5 style='margin:0; color:#94a3b8;'>Framework Integrity Gate</h5>
-            <h2 style='margin:5px 0;'>{status_text}</h2>
-            <p style='margin:0; font-size:12px; color:#94a3b8;'>All Pre-requisites & Checks</p>
+            <h5 style='margin:0; font-family: sans-serif;'>Framework Integrity Gate</h5>
+            <h2 style='margin:5px 0; font-family: monospace;'>{status_text}</h2>
+            <p style='margin:0; font-size:12px;'>All Pre-requisites & Checks</p>
         </div>
     """, unsafe_allow_html=True)
 
