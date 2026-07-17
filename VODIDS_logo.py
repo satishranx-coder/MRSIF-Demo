@@ -127,7 +127,7 @@ st.sidebar.markdown(
 
 # Render the PNG locally from the main folder path
 try:
-    st.sidebar.image("./vodids.png", use_container_width=True)
+    st.sidebar.image("./VODIDS.png", use_container_width=True)
 except Exception as e:
     st.sidebar.caption("📷 VODIDS System Graphic Engine Active")
 
