@@ -35,9 +35,9 @@ class EmbeddedSubsystems(BaseModel):
     imca_pilot_competency: str  # e.g., "IMCA-A-007 (900 hrs)"
 
 class LiveInterventionPayload(BaseModel):
-    mrsif_header: MrsifUpdateHeader
-    asset_identity: AssetIdentityBlock
-    subsystems: EmbeddedSubsystems
+    mrsif_header= MrsifUpdateHeader
+    asset_identity= AssetIdentityBlock
+    subsystems= EmbeddedSubsystems
     functional_tag: str
     runtime_telemetry_stream: dict = Field(default_factory=dict)
 
@@ -95,7 +95,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Main Header Container: 100% Text, No Image Tags Inside
+# Main Header Container (Centered Title text)
 st.markdown("""
     <div style="background-color: #1e293b; padding: 30px 20px; border-radius: 8px; border-left: 6px solid #06b6d4; margin-bottom: 25px; text-align: center;">
         <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #f1f5f9; letter-spacing: 1px;">
@@ -109,18 +109,20 @@ for key in ["f1", "f2", "f3", "d1", "d2", "d3"]:
         st.session_state[key] = False
 
 # ====================================================================
-# 4. CONTROL PANEL & SIDEBAR (LOGO PLACED HERE RIGIDLY)
+# 4. CONTROL PANEL & SIDEBAR (WITH HIGH-VISIBILITY COLOR ACCENTS)
 # ====================================================================
-# Logo injected safely at the absolute top of the sidebar controls
 try:
     st.sidebar.image("./VODIDS.png", use_container_width=True)
 except Exception as e:
     pass
 
+# Upgraded inline styles to force solid color over default sidebar transparency
 st.sidebar.markdown(
     """
-    <div style="text-align: center; padding-top: 10px; padding-bottom: 15px;">
-        <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #06b6d4; letter-spacing: 2px; font-size: 22px;">VODIDS Ver 1.2</h2>
+    <div style="text-align: center; padding-top: 15px; padding-bottom: 15px;">
+        <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #06b6d4 !important; opacity: 1.0 !important; letter-spacing: 2px; font-size: 24px; font-weight: bold;">
+            VODIDS Ver 1.2
+        </h2>
     </div>
     """, 
     unsafe_allow_html=True
