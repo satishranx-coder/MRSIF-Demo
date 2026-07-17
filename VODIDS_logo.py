@@ -95,17 +95,19 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Unified Markdown Injected Grid (Logo Left, Text Right Inside 1 Element Container)
+# Perfectly Centered Layout: Logo Far Left, Text Positioned Center-Screen
 st.markdown("""
-    <div style="background-color: #1e293b; padding: 15px 20px; border-radius: 8px; border-left: 6px solid #06b6d4; margin-bottom: 25px;">
-        <div style="display: flex; align-items: center; gap: 20px;">
-            <img src="./app/static/VODIDS.png" style="width: 130px; height: auto; border-radius: 4px;" 
+    <div style="background-color: #1e293b; padding: 15px 20px; border-radius: 8px; border-left: 6px solid #06b6d4; margin-bottom: 25px; position: relative; min-height: 100px; display: flex; align-items: center;">
+        <!-- Logo on the most left -->
+        <div style="position: absolute; left: 20px;">
+            <img src="./app/static/VODIDS.png" style="width: 120px; height: auto; border-radius: 4px;" 
                  onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/satish-ramachandran-vikra/mrsif-demo/main/VODIDS.png';">
-            <div>
-                <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #f1f5f9; letter-spacing: 1px;">
-                    VODIDS - MRSIFramework Version 1.2
-                </h2>
-            </div>
+        </div>
+        <!-- Header Text Centered globally in the container -->
+        <div style="width: 100%; text-align: center;">
+            <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #f1f5f9; letter-spacing: 1px;">
+                VODIDS - MRSIFramework Version 1.2
+            </h2>
         </div>
     </div>
 """, unsafe_allow_html=True)
