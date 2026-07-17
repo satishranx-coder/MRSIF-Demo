@@ -76,10 +76,39 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Deep Injection CSS to force theme global text properties visible over Streamlit base styling rules
 st.markdown("""
     <style>
         .reportview-container { background: #0b0f19; }
-        .stMarkdown h1, h2, h3 { color: #f1f5f9 !important; font-family: 'Courier New', Courier, monospace; }
+        
+        /* Forces Main Application Titles and Headers to remain White at all times without hover states */
+        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4 { 
+            color: #ffffff !important; 
+            font-family: 'Courier New', Courier, monospace !important; 
+        }
+        
+        /* Fixes Sidebar specific custom element visibility bugs */
+        [data-testid="stSidebar"] {
+            background-color: #0b0f19 !important;
+        }
+        
+        /* Direct targeting rules for the sidebar title text container */
+        .sidebar-brand-box {
+            background-color: #1e293b !important; 
+            padding: 15px; 
+            border-radius: 6px; 
+            text-align: center; 
+            border: 1px solid #06b6d4;
+            margin-bottom: 20px;
+        }
+        
+        .sidebar-brand-box span {
+            color: #ffffff !important;
+            font-size: 20px !important;
+            font-weight: bold !important;
+            font-family: 'Courier New', monospace !important;
+        }
+
         div[data-testid="stMetricValue"] { font-size: 32px !important; font-family: 'Courier New', Courier, monospace; font-weight: bold; }
         .stTabs [aria-selected="true"] { background-color: #0284c7 !important; color: white !important; }
         
@@ -98,7 +127,7 @@ st.markdown("""
 # Main Header Container (Centered Title text)
 st.markdown("""
     <div style="background-color: #1e293b; padding: 30px 20px; border-radius: 8px; border-left: 6px solid #06b6d4; margin-bottom: 25px; text-align: center;">
-        <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #f1f5f9; letter-spacing: 1px;">
+        <h2 style="margin: 0; font-family: 'Courier New', monospace; color: #ffffff !important; letter-spacing: 1px;">
             VODIDS - MRSIFramework Version 1.2
         </h2>
     </div>
@@ -109,20 +138,18 @@ for key in ["f1", "f2", "f3", "d1", "d2", "d3"]:
         st.session_state[key] = False
 
 # ====================================================================
-# 4. CONTROL PANEL & SIDEBAR (FORCED STATIC VISIBILITY OVER STREAMLIT THEME)
+# 4. CONTROL PANEL & SIDEBAR (FORCED VISIBILITY CONFIGURATION)
 # ====================================================================
 try:
     st.sidebar.image("./VODIDS.png", use_container_width=True)
 except Exception as e:
     pass
 
-# Using a styled container div with strict text color overrides to force visibility
+# Embedded via explicit clean HTML class selector ensuring visibility bypasses Streamlit UI limitations
 st.sidebar.markdown(
     """
-    <div style="background-color: #1e293b; padding: 12px; border-radius: 6px; text-align: center; margin-top: 15px; margin-bottom: 15px; border: 1px solid #334155;">
-        <span style="font-family: 'Courier New', monospace; color: #ffffff !important; font-size: 20px; font-weight: bold; letter-spacing: 1px; display: block;">
-            VODIDS Ver 1.2
-        </span>
+    <div class="sidebar-brand-box">
+        <span>VODIDS Ver 1.2</span>
     </div>
     """, 
     unsafe_allow_html=True
@@ -202,7 +229,7 @@ with status_col1:
     st.markdown(f"""
         <div class="{card_style}">
             <h5 style='margin:0; color:#94a3b8;'>Metocean Threshold</h5>
-            <h2 style='margin:5px 0; color:#f1f5f9;'>{metocean_current} kts</h2>
+            <h2 style='margin:5px 0; color:#ffffff !important;'>{metocean_current} kts</h2>
             <p style='margin:0; font-size:12px; color:#94a3b8;'>Limit: 1.5 kts Max Drag</p>
         </div>
     """, unsafe_allow_html=True)
@@ -214,7 +241,7 @@ with status_col2:
     st.markdown(f"""
         <div class="{card_style}">
             <h5 style='margin:0; color:#94a3b8;'>Intervention Delivery Torque</h5>
-            <h2 style='margin:5px 0; color:#f1f5f9;'>{measured_torque if class_code == "CFIHOS-10000284" else 'N/A'} Nm</h2>
+            <h2 style='margin:5px 0; color:#ffffff !important;'>{measured_torque if class_code == "CFIHOS-10000284" else 'N/A'} Nm</h2>
             <p style='margin:0; font-size:12px; color:#94a3b8;'>CFIHOS Limit: {torque_limit} Nm</p>
         </div>
     """, unsafe_allow_html=True)
@@ -225,7 +252,7 @@ with status_col3:
     st.markdown(f"""
         <div class="{card_style}">
             <h5 style='margin:0; color:#94a3b8;'>Framework Integrity Gate</h5>
-            <h2 style='margin:5px 0; color:#f1f5f9;'>{status_text}</h2>
+            <h2 style='margin:5px 0; color:#ffffff !important;'>{status_text}</h2>
             <p style='margin:0; font-size:12px; color:#94a3b8;'>All Pre-requisites & Checks</p>
         </div>
     """, unsafe_allow_html=True)
