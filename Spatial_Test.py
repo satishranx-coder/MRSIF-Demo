@@ -304,7 +304,6 @@ with step_tabs[2]:
 with step_tabs[3]:
     st.markdown(f"### 🌐 Real-Time Spatial Grid Alignment Target: {runtime_payload.functional_tag}")
     
-    # Generate realistic subsea trench geometry
     x_grid = np.linspace(0, 100, 40)
     y_grid = np.linspace(-40, 40, 40)
     X, Y = np.meshgrid(x_grid, y_grid)
@@ -315,7 +314,6 @@ with step_tabs[3]:
     
     fig = go.Figure()
     
-    # Seafloor surface
     fig.add_trace(go.Surface(
         x=X, y=Y, z=Z, 
         colorscale='Viridis', 
@@ -324,7 +322,6 @@ with step_tabs[3]:
         colorbar=dict(title=dict(text="Depth (m)", font=dict(color="#94a3b8")), tickfont=dict(color="#94a3b8"))
     ))
     
-    # Subsea field equipment markers
     for tag, d in ACTIVE_FIELD_TAGS.items():
         is_current = (tag == selected_tag)
         m_color = "#10b981" if (is_safe and is_current) else "#ef4444" if is_current else "#38bdf8"
@@ -354,7 +351,7 @@ with step_tabs[3]:
                 marker=dict(size=9, color="#06b6d4", symbol='square')
             ))
 
-    # FIXED: Restructured nested layout dictionary parameters cleanly inside their properties loops
+    # FIXED: Re-mapped yaxis properties correctly inside the dict statement block
     fig.update_layout(
         margin=dict(l=0, r=0, b=0, t=0), height=550,
         scene=dict(
