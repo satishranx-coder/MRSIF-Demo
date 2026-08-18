@@ -5,6 +5,8 @@ import plotly.graph_objects as go
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 from datetime import datetime, timezone
+from pathlib import Path
+import base64
 
 # ============================================================
 # VODIDS | MRSIF v4.0 — Mission Intelligence GUI Prototype
@@ -16,6 +18,26 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+
+def get_logo_html(path: str = "VODIDS.png") -> str:
+    """Render the VODIDS logo in the custom top bar with a safe text fallback."""
+    p = Path(path)
+    if not p.exists():
+        return '<div class="logo-fallback">VODIDS</div>'
+    try:
+        mime = "image/png"
+        encoded = base64.b64encode(p.read_bytes()).decode("utf-8")
+        return (
+            f'<div style="width:92px;height:58px;border-radius:12px;overflow:hidden;'
+            f'border:1px solid #2f6681;background:#081722;display:flex;align-items:center;'
+            f'justify-content:center;">'
+            f'<img src="data:{mime};base64,{encoded}" '
+            f'style="width:100%;height:100%;object-fit:cover;object-position:center;" />'
+            f'</div>'
+        )
+    except Exception:
+        return '<div class="logo-fallback">VODIDS</div>'
 
 # -----------------------------
 # 1. CONFIGURATION
@@ -294,10 +316,7 @@ else:
 # -----------------------------
 # 6. HEADER
 # -----------------------------
-logo_html = '<div class="logo-fallback">VODIDS</div>'
-if Path("VODIDS.png").exists():
-    # Streamlit image is rendered separately below; fallback still maintains layout.
-    logo_html = '<div class="logo-fallback">VODIDS</div>'
+logo_html = get_logo_html("VODIDS.png")
 
 st.markdown(f"""
 <div class="topbar">
