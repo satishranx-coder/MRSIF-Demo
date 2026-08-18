@@ -119,6 +119,13 @@ for key, value in DEFAULT_MISSION["baseline"].items():
     if key not in st.session_state:
         st.session_state[key] = value
 
+# Backward compatibility for older deployed sessions / previous GUI versions.
+if "hydraulic_flow_lpm" not in st.session_state:
+    if "hydraulic_flow" in st.session_state:
+        st.session_state.hydraulic_flow_lpm = st.session_state.hydraulic_flow
+    else:
+        st.session_state.hydraulic_flow_lpm = DEFAULT_MISSION["baseline"]["hydraulic_flow_lpm"]
+
 # ---------- style ----------
 st.markdown("""
 <style>
@@ -499,7 +506,7 @@ with center:
         <text x="30" y="390" fill="#8fa6b8" font-size="9">HYDRAULIC</text>
         <text x="30" y="406" fill="#eef7fb" font-size="13" font-weight="700">{st.session_state.hydraulic_psi if stage>=7 else 0} psi</text>
         <text x="172" y="390" fill="#8fa6b8" font-size="9">FLOW</text>
-        <text x="172" y="406" fill="#eef7fb" font-size="13" font-weight="700">{st.session_state.hydraulic_flow if stage>=7 else 0:.1f} L/min</text>
+        <text x="172" y="406" fill="#eef7fb" font-size="13" font-weight="700">{st.session_state.hydraulic_flow_lpm if stage>=7 else 0:.1f} L/min</text>
         <text x="280" y="390" fill="#8fa6b8" font-size="9">VALVE STATE</text>
         <text x="280" y="406" fill="{'#72f2a5' if valve_pct==100 else '#eef7fb'}" font-size="13" font-weight="700">{valve_pct}% OPEN</text>
         <text x="420" y="390" fill="#8fa6b8" font-size="9">POINT CLOUD</text>
@@ -591,7 +598,7 @@ with st.expander("Engineering / Demonstration Parameters", expanded=False):
         st.session_state.alignment_deg = st.number_input("TCP/TEP alignment error (°)",0.0,20.0,float(st.session_state.alignment_deg),0.1)
     with p4:
         st.session_state.hydraulic_psi = st.number_input("Hydraulic pressure (psi)",0,5000,int(st.session_state.hydraulic_psi),100)
-        st.session_state.hydraulic_flow = st.number_input("Hydraulic flow (L/min)",0.0,30.0,float(st.session_state.hydraulic_flow),0.5)
+        st.session_state.hydraulic_flow_lpm = st.number_input("Hydraulic flow (L/min)",0.0,30.0,float(st.session_state.hydraulic_flow_lpm),0.5)
         st.session_state.tool_match = st.checkbox("Correct hot stab / interface",st.session_state.tool_match)
         st.session_state.dvl_lock = st.checkbox("DVL bottom lock",st.session_state.dvl_lock)
         st.session_state.fls_available = st.checkbox("FLS available",st.session_state.fls_available)
@@ -611,4 +618,4 @@ timeline += '</div>'
 st.markdown(timeline, unsafe_allow_html=True)
 
 ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-st.markdown(f'<div style="margin-top:9px;border-top:1px solid #1e3141;padding-top:7px;color:#6f8798;font-size:8px;display:flex;justify-content:space-between"><span>VODIDS · MRSIF v7.0 Mission Workspace</span><span>Simulation only · {ts}</span></div>', unsafe_allow_html=True)
+st.markdown(f'<div style="margin-top:9px;border-top:1px solid #1e3141;padding-top:7px;color:#6f8798;font-size:8px;display:flex;justify-content:space-between"><span>VODIDS · MRSIF v7.1 Mission Workspace</span><span>Simulation only · {ts}</span></div>', unsafe_allow_html=True)
