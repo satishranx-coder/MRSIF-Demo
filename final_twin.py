@@ -431,16 +431,6 @@ body{{font-family:Arial,sans-serif;margin:36px;color:#173142}}
 h1,h2{{color:#0b6687}} table{{width:100%;border-collapse:collapse;margin:14px 0;font-size:12px}}
 th,td{{border:1px solid #c9d8df;padding:7px;vertical-align:top}} th{{background:#0b4968;color:#fff}}
 .meta{{background:#edf6f9;border-left:5px solid #149dc4;padding:12px}} .note{{font-size:11px;color:#667e8b}}
-
-.evidence-principle{
-    background:#0a1722;border:1px solid #2b4a5e;border-left:4px solid #33d1ff;
-    border-radius:9px;padding:8px 10px;margin:6px 0 8px;color:#cfe3ec;
-    font-size:8.5px;line-height:1.4
-}
-.source-tag{
-    display:inline-block;border:1px solid #3a5567;border-radius:10px;padding:2px 5px;
-    color:#8fa8b8;font-size:7px;margin-left:4px
-}
 </style></head><body>
 <h1>VODIDS · MRSIF-ROV Mission Assurance Report</h1>
 <div class="meta">
