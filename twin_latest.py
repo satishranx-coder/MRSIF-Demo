@@ -237,10 +237,22 @@ background:#0b1722;border:1px solid #29465c;border-radius:9px;padding:7px 9px;mi
 .compact-panel{background:#0d1824;border:1px solid #24384a;border-radius:10px;padding:8px}
 .compact-row{display:flex;justify-content:space-between;gap:6px;padding:4px 0;border-bottom:1px solid rgba(36,56,74,.48);font-size:9px}
 .compact-row:last-child{border-bottom:none}
-.stagebar{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin:6px 0 8px}
-.stagechip{padding:5px 2px;border:1px solid #29465c;border-radius:6px;text-align:center;font-size:7px;color:#718b9c}
-.stagechip.done{border-color:#2bd576;color:#72f2a5;background:rgba(43,213,118,.06)}
-.stagechip.active{border-color:#33d1ff;color:#e4f9ff;background:rgba(51,209,255,.09)}
+.process-list{display:flex;flex-direction:column;gap:5px}
+.process-step{display:grid;grid-template-columns:22px 1fr 54px;gap:6px;align-items:center;
+border:1px solid #29465c;border-radius:7px;padding:6px 7px;background:#0b1722}
+.process-step .pn{font-size:8px;color:#6f8999;font-weight:800}
+.process-step .ptxt{font-size:8.5px;color:#8fa6b8;line-height:1.15}
+.process-step.done{border-color:#2bd576;background:rgba(43,213,118,.05)}
+.process-step.done .pn,.process-step.done .ptxt{color:#72f2a5}
+.process-step.active{border-color:#33d1ff;background:rgba(51,209,255,.08)}
+.process-step.active .pn,.process-step.active .ptxt{color:#e3f8ff}
+.proc-status{font-size:7px;font-weight:800;text-align:center;border-radius:10px;padding:3px 4px;border:1px solid #3a5364;color:#8199a9}
+.process-step.done .proc-status{border-color:#2bd576;color:#72f2a5}
+.process-step.active .proc-status{border-color:#33d1ff;color:#76dbff}
+.report-table{width:100%;border-collapse:collapse;font-size:9px}
+.report-table th{color:#9fb4c3;text-align:left;border-bottom:1px solid #345065;padding:6px}
+.report-table td{color:#dce9ef;border-bottom:1px solid rgba(52,80,101,.45);padding:6px;vertical-align:top}
+.report-note{font-size:9px;color:#7f98a8;line-height:1.45}
 div[role="radiogroup"]{gap:.35rem!important}
 </style>
 """, unsafe_allow_html=True)
@@ -379,7 +391,7 @@ st.markdown(f"""
 # Page selector keeps the live operational screen uncluttered.
 page = st.radio(
     "Workspace",
-    ["MISSION", "OPERATIONS", "CLOSURE"],
+    ["MISSION", "OPERATIONS", "REPORT", "CLOSURE"],
     index=1 if stage < 9 else 2,
     horizontal=True,
     label_visibility="collapsed",
@@ -436,16 +448,36 @@ elif page == "OPERATIONS":
     </div>
     """, unsafe_allow_html=True)
 
-    # Compact stage bar instead of a large progress window.
-    stage_html = '<div class="stagebar">'
-    for i,label in enumerate(STAGES):
-        cls = "done" if i < stage else ("active" if i == stage else "")
-        stage_html += f'<div class="stagechip {cls}" title="{label}">S{i+1}</div>'
-    stage_html += '</div>'
-    st.markdown(stage_html, unsafe_allow_html=True)
+    # Digital Twin remains central; meaningful process completion and assurance stay at the sides.
+    process_col, twin_col, assurance_col = st.columns([1.05,4.6,1.15], gap="small")
 
-    # Twin gets almost the full screen; only a narrow assurance panel remains at right.
-    twin_col, assurance_col = st.columns([4.35,1.05], gap="small")
+    with process_col:
+        st.markdown('<div class="compact-panel"><div class="pt">Mission Process</div><div class="ps">Meaningful stage completion</div>', unsafe_allow_html=True)
+        proc_html = '<div class="process-list">'
+        for i,label in enumerate(STAGES):
+            if i < stage:
+                cls, stat = "done", "DONE"
+            elif i == stage:
+                cls, stat = "active", "ACTIVE"
+            else:
+                cls, stat = "", "PENDING"
+            proc_html += f'<div class="process-step {cls}"><span class="pn">{i+1:02d}</span><span class="ptxt">{label}</span><span class="proc-status">{stat}</span></div>'
+        proc_html += '</div>'
+        st.markdown(proc_html, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="compact-panel">
+          <div class="pt">Completion Evidence</div>
+          <div class="compact-row"><span class="rk">Work Ref</span><span class="rv">{mission.get('mission_id')}</span></div>
+          <div class="compact-row"><span class="rk">Target</span><span class="rv">{mission.get('target_tag')}</span></div>
+          <div class="compact-row"><span class="rk">Vehicle</span><span class="rv">{mission.get('vehicle')}</span></div>
+          <div class="compact-row"><span class="rk">CFIHOS</span><span class="rv">{mission.get('cfihos_code','—')}</span></div>
+          <div class="compact-row"><span class="rk">Evidence</span><span class="badge {'pass' if stage>=8 else 'monitor'}">{'CAPTURED' if stage>=8 else 'BUILDING'}</span></div>
+        </div>
+        """, unsafe_allow_html=True)
+
 
     with twin_col:
         progress = stage / 9
@@ -549,6 +581,102 @@ elif page == "OPERATIONS":
         else:
             st.markdown(f'<div class="decision"><div class="bigstate">HOLD</div><b>Resolve:</b> {", ".join(active_holds)}</div>',unsafe_allow_html=True)
 
+
+elif page == "REPORT":
+    completed_count = min(stage, 9)
+    total_count = len(STAGES)
+    mission_complete_flag = stage >= 9
+
+    st.markdown(f"""
+    <div class="mission-hero">
+      <div class="hero-main"><div class="hero-label">VODIDS MRSIF Mission Report</div><div class="hero-value">{mission.get('mission_name')}</div></div>
+      <div class="hero-item"><div class="hero-label">Work Ref</div><div class="hero-value">{mission.get('mission_id')}</div></div>
+      <div class="hero-item"><div class="hero-label">Target</div><div class="hero-value">{mission.get('target_tag')}</div></div>
+      <div class="hero-item"><div class="hero-label">Report Status</div><div class="hero-value" style="color:{'#72f2a5' if mission_complete_flag else '#76dbff'}">{'FINAL' if mission_complete_flag else 'LIVE / DRAFT'}</div></div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    r1, r2 = st.columns([1.25, 2.75], gap="small")
+    with r1:
+        st.markdown('<div class="panel"><div class="pt">Mission Summary</div>', unsafe_allow_html=True)
+        summary_rows = [
+            ("Mission", mission.get("mission_name")),
+            ("Depth", f"{mission.get('water_depth_m')} m"),
+            ("Vehicle", mission.get("vehicle")),
+            ("Manipulator", mission.get("manipulator","—")),
+            ("Target", mission.get("target_tag")),
+            ("Asset Class", mission.get("cfihos_class","—")),
+            ("CFIHOS Code", mission.get("cfihos_code","—")),
+            ("Interface", mission.get("interface_standard","—")),
+            ("Completion", f"{completed_count}/{total_count} stages"),
+        ]
+        for k,v in summary_rows:
+            st.markdown(f'<div class="row"><span class="rk">{k}</span><span class="rv">{v}</span></div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown("<div style='height:7px'></div>", unsafe_allow_html=True)
+        st.markdown('<div class="panel"><div class="pt">Localization Basis</div>', unsafe_allow_html=True)
+        loc_rows = [
+            ("INS", "STABLE" if st.session_state.ins_stable else "HOLD"),
+            ("USBL", f"VALID · {st.session_state.usbl_age_s:.1f} s"),
+            ("DVL", "BOTTOM LOCK" if st.session_state.dvl_bottom_lock else "LOST"),
+            ("IMU / Depth", "VALID"),
+            ("Photogrammetry", "STRUCTURE MATCHED" if st.session_state.photo_structure_match else "HOLD"),
+            ("CFIHOS Identity", "MATCHED" if st.session_state.cfihos_asset_match else "HOLD"),
+        ]
+        for k,v in loc_rows:
+            st.markdown(f'<div class="row"><span class="rk">{k}</span><span class="rv">{v}</span></div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with r2:
+        st.markdown('<div class="panel"><div class="pt">Process Completion Record</div><div class="ps">Each process is linked to its operational evidence and gate outcome</div>', unsafe_allow_html=True)
+        rows = ""
+        evidence_map = [
+            "Work scope, target, vehicle and acceptance basis loaded.",
+            "Metocean gate checked and ROV transits toward worksite.",
+            "USBL/INS/DVL position solution and photogrammetry target reference established.",
+            "DVL bottom lock and station-keeping reference accepted.",
+            "Correct hot stab / interface verified against asset requirement.",
+            "Manipulator TCP aligned to target TEP within accepted angular and clearance limits.",
+            "Hot stab inserted only after localization, tooling and geometry gates pass.",
+            "Hydraulic pressure/flow applied and valve function executed.",
+            "Valve state, navigation, tool position and mission evidence verified; tool withdrawn.",
+            "All mission evidence accepted; work reference ready for closure and data handover.",
+        ]
+        for i,label in enumerate(STAGES):
+            if i < stage or (stage >= 9 and i == 9):
+                stat = "COMPLETE"
+                color = "#72f2a5"
+            elif i == stage:
+                stat = "IN PROGRESS"
+                color = "#76dbff"
+            else:
+                stat = "PENDING"
+                color = "#7f98a8"
+            rows += f"<tr><td>{i+1:02d}</td><td>{label}</td><td style='color:{color};font-weight:700'>{stat}</td><td>{evidence_map[i]}</td></tr>"
+        st.markdown(f"""
+        <table class="report-table">
+          <thead><tr><th>#</th><th>Process</th><th>Status</th><th>Operational Evidence / Acceptance Basis</th></tr></thead>
+          <tbody>{rows}</tbody>
+        </table>
+        """, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown("<div style='height:7px'></div>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="panel">
+          <div class="pt">MRSIF Mission Assurance Statement</div>
+          <p class="report-note">
+          MRSIF does not treat an ROV movement as mission completion. The mission progresses only when
+          the active operational stage is accepted against localization, environmental, tooling,
+          geometric, functional and evidence requirements. CFIHOS-aligned asset identity provides the
+          engineering component context, while OSDU-linked spatial and operational data provide the
+          broader subsurface/data environment. Mission closure is permitted only when the intended
+          intervention outcome and its supporting evidence are verified.
+          </p>
+        </div>
+        """, unsafe_allow_html=True)
+
 elif page == "CLOSURE":
     if stage < 9:
         st.warning("Closure remains locked until the mission reaches Mission Accomplished.")
@@ -628,4 +756,4 @@ if page == "OPERATIONS":
 
 
 ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-st.markdown(f'<div style="margin-top:9px;border-top:1px solid #1e3141;padding-top:7px;color:#6f8798;font-size:8px;display:flex;justify-content:space-between"><span>VODIDS · MRSIF v7.3 Operations Console</span><span>Simulation only · {ts}</span></div>', unsafe_allow_html=True)
+st.markdown(f'<div style="margin-top:9px;border-top:1px solid #1e3141;padding-top:7px;color:#6f8798;font-size:8px;display:flex;justify-content:space-between"><span>VODIDS · MRSIF v7.4 Process & Report Console</span><span>Simulation only · {ts}</span></div>', unsafe_allow_html=True)
