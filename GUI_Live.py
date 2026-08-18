@@ -278,6 +278,73 @@ div[data-testid="stSlider"] label {
     color: #eef7fb !important;
 }
 
+
+/* MRSIF readable KPI cards */
+.mrsif-kpi-grid {
+    display:grid;
+    grid-template-columns: repeat(5, minmax(0,1fr));
+    gap:8px;
+    margin-top:8px;
+}
+.mrsif-kpi {
+    background:linear-gradient(180deg,#0d1a27,#0a1520);
+    border:1px solid #29465c;
+    border-radius:12px;
+    padding:10px 10px 9px;
+    min-height:112px;
+    overflow:hidden;
+}
+.mrsif-kpi-title {
+    color:#9db2c2;
+    font-size:10px;
+    font-weight:700;
+    line-height:1.18;
+    min-height:24px;
+}
+.mrsif-kpi-value {
+    color:#f4fbff;
+    font-size:27px;
+    line-height:1.0;
+    font-weight:900;
+    margin-top:8px;
+    letter-spacing:-0.4px;
+}
+.mrsif-kpi-unit {
+    color:#8da3b4;
+    font-size:10px;
+    font-weight:700;
+    margin-left:3px;
+}
+.mrsif-kpi-status {
+    display:inline-block;
+    margin-top:9px;
+    padding:4px 7px;
+    border-radius:14px;
+    font-size:9px;
+    font-weight:800;
+    line-height:1.1;
+    max-width:100%;
+}
+.mrsif-kpi-status.pass {
+    color:#72f2a5;
+    background:rgba(43,213,118,.10);
+    border:1px solid rgba(43,213,118,.28);
+}
+.mrsif-kpi-status.hold {
+    color:#ffd079;
+    background:rgba(255,189,74,.10);
+    border:1px solid rgba(255,189,74,.28);
+}
+.mrsif-kpi-note {
+    color:#718a9c;
+    font-size:8.5px;
+    line-height:1.15;
+    margin-top:6px;
+}
+@media (max-width: 1200px) {
+  .mrsif-kpi-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -627,14 +694,64 @@ with center:
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Navigation confidence strip
+    # Navigation / geometry KPI strip
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-    k1, k2, k3, k4, k5 = st.columns(5)
-    k1.metric("Localization", f"{localization_conf}%", "INS + DVL + IMU")
-    k2.metric("Point Cloud", f"{pointcloud_conf}%", "Registered")
-    k3.metric("Distance Error", f"{distance_error_pct:.1f}%", "Limit 5%")
-    k4.metric("Clearance", f"{clearance_mm} mm", "Min 50 mm")
-    k5.metric("Visibility", f"{visibility_m:.1f} m", "FLS backup" if degraded_visibility else "Visual + FLS")
+
+    kpi_cards = [
+        {
+            "title": "ROV Localization Confidence",
+            "value": f"{localization_conf}",
+            "unit": "%",
+            "status": "PASS" if localization_pass else "HOLD",
+            "status_cls": "pass" if localization_pass else "hold",
+            "note": "INS + DVL + IMU navigation solution"
+        },
+        {
+            "title": "Photogrammetry Point-Cloud Confidence",
+            "value": f"{pointcloud_conf}",
+            "unit": "%",
+            "status": "REGISTERED" if pointcloud_pass else "REVALIDATE",
+            "status_cls": "pass" if pointcloud_pass else "hold",
+            "note": "Registered operational 3D reference"
+        },
+        {
+            "title": "ROV-to-Target Distance Error",
+            "value": f"{distance_error_pct:.1f}",
+            "unit": "%",
+            "status": "WITHIN LIMIT" if distance_pass else "OUTSIDE LIMIT",
+            "status_cls": "pass" if distance_pass else "hold",
+            "note": "Mission tolerance limit ≤ 5%"
+        },
+        {
+            "title": "Manipulator / Tool Clearance",
+            "value": f"{clearance_mm}",
+            "unit": "mm",
+            "status": "CLEAR" if clearance_pass else "HOLD",
+            "status_cls": "pass" if clearance_pass else "hold",
+            "note": "Minimum demo clearance 50 mm"
+        },
+        {
+            "title": "Visual / FLS Localization Support",
+            "value": f"{visibility_m:.1f}",
+            "unit": "m",
+            "status": "FLS BACKUP" if degraded_visibility and fls_available else "VISUAL + FLS",
+            "status_cls": "pass" if visibility_supported else "hold",
+            "note": "Degraded-visibility support path"
+        },
+    ]
+
+    cards_html = '<div class="mrsif-kpi-grid">'
+    for card in kpi_cards:
+        cards_html += f"""
+        <div class="mrsif-kpi">
+            <div class="mrsif-kpi-title">{card['title']}</div>
+            <div class="mrsif-kpi-value">{card['value']}<span class="mrsif-kpi-unit">{card['unit']}</span></div>
+            <div class="mrsif-kpi-status {card['status_cls']}">{card['status']}</div>
+            <div class="mrsif-kpi-note">{card['note']}</div>
+        </div>
+        """
+    cards_html += '</div>'
+    st.markdown(cards_html, unsafe_allow_html=True)
 
 # RIGHT — readiness + OSDU + decision
 with right:
