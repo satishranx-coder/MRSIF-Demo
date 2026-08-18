@@ -103,7 +103,7 @@ def logo_html(path="VODIDS.png"):
         return '<div class="logo-fallback">VODIDS</div>'
     try:
         b64 = base64.b64encode(p.read_bytes()).decode()
-        return f'<img src="data:image/png;base64,{b64}" style="width:86px;height:54px;object-fit:contain;border-radius:8px;">'
+        return f'<img src="data:image/png;base64,{b64}" style="width:58px;height:38px;object-fit:contain;border-radius:7px;">'
     except Exception:
         return '<div class="logo-fallback">VODIDS</div>'
 
@@ -261,34 +261,20 @@ border:1px solid #29465c;border-radius:7px;padding:6px 7px;background:#0b1722}
 .report-note{font-size:9px;color:#7f98a8;line-height:1.45}
 div[role="radiogroup"]{gap:.35rem!important}
 
-/* Final readability / report styling */
+.std-strip{display:grid;grid-template-columns:1.15fr 1fr 1.2fr 1.15fr 1.15fr;gap:5px;margin:6px 0 8px}
+.std-card{background:#0a1722;border:1px solid #29465c;border-radius:8px;padding:7px 8px;min-height:49px}
+.std-k{font-size:7.5px;color:#718b9c;letter-spacing:.65px;text-transform:uppercase}
+.std-v{font-size:10px;color:#eef7fb;font-weight:800;margin-top:3px}
+.std-n{font-size:7px;color:#6f8999;margin-top:2px;line-height:1.2}
+.eng-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:6px 0 8px}
+.eng-card{background:#0b1722;border:1px solid #29465c;border-radius:8px;padding:7px 8px}
+.eng-k{font-size:7.5px;color:#829aaa}.eng-v{font-size:13px;color:#eef7fb;font-weight:900;margin-top:2px}.eng-n{font-size:7px;color:#6f8999;margin-top:2px}
 div[data-testid="stMarkdownContainer"] p,
 div[data-testid="stMarkdownContainer"] li,
 div[data-testid="stMarkdownContainer"] h1,
 div[data-testid="stMarkdownContainer"] h2,
-div[data-testid="stMarkdownContainer"] h3,
-div[data-testid="stMarkdownContainer"] h4 {
-    color:#e6f0f5 !important;
-}
-div[data-testid="stMetric"] {
-    background:#0d1824 !important;
-    border:1px solid #29465c !important;
-    border-radius:10px !important;
-    padding:10px !important;
-}
-div[data-testid="stMetric"] label,
-div[data-testid="stMetric"] div {
-    color:#eef7fb !important;
-}
-.report-shell{
-    background:#0b1722;border:1px solid #29465c;border-radius:12px;padding:12px;color:#dce9ef;
-}
-.report-shell h3{color:#eef7fb;margin:0 0 8px 0;font-size:13px}
-.report-shell p{color:#a9becb;font-size:9px;line-height:1.45}
-.restart-note{
-    border:1px solid #2f6681;border-left:4px solid #33d1ff;background:rgba(51,209,255,.06);
-    border-radius:9px;padding:9px 10px;color:#cfe4ee;font-size:9px;line-height:1.45;margin-top:8px;
-}
+div[data-testid="stMarkdownContainer"] h3 {color:#e5eff4 !important;}
+.report-shell{background:#0b1722;border:1px solid #29465c;border-radius:10px;padding:10px;color:#e5eff4}
 </style>
 """, unsafe_allow_html=True)
 
@@ -406,36 +392,35 @@ else:
     state_color = "#ffd079"
 
 
-def build_mission_report_html(mission, stage, gate_status):
-    completed = []
-    evidence_map = [
-        "Mission scope, work reference, target, vehicle and acceptance basis loaded.",
-        "Metocean conditions accepted and controlled ROV approach initiated.",
-        "INS/USBL/DVL position solution established; photogrammetry target reference confirmed.",
-        "DVL bottom lock and station-keeping reference accepted.",
-        "Correct hot stab and target interface verified against asset context.",
-        "Manipulator TCP aligned to TEP within angular, distance and clearance criteria.",
-        "Hot stab insertion permitted after localization, tooling and geometric gates pass.",
-        "Hydraulic pressure and flow applied; valve functional operation executed.",
-        "Valve state, navigation and intervention evidence verified; tool withdrawal completed.",
-        "Mission evidence accepted; work reference eligible for closure and handover.",
+def build_downloadable_report(mission, gate_status):
+    evidence = [
+        "Mission scope, target, vehicle and acceptance basis loaded.",
+        "Environmental limits accepted and ROV approach completed.",
+        "USBL / INS / DVL localization and photogrammetry target reference established.",
+        "DVL bottom lock and StationKeep reference established.",
+        "Correct hot stab and target interface verified.",
+        "Manipulator TCP aligned to target TEP within accepted geometry.",
+        "Hot stab insertion completed after active gates passed.",
+        "Hydraulic pressure / flow applied and valve function completed.",
+        "Valve state and intervention evidence verified; tool withdrawn.",
+        "Mission evidence accepted and handover released.",
     ]
-    for i, label in enumerate(STAGES):
-        status = "COMPLETE" if (i < stage or stage >= 9) else ("IN PROGRESS" if i == stage else "PENDING")
-        completed.append(f"<tr><td>{i+1:02d}</td><td>{label}</td><td>{status}</td><td>{evidence_map[i]}</td></tr>")
-
-    gate_rows = "".join(
-        f"<tr><td>{k}</td><td>{v[0]}</td></tr>" for k,v in gate_status.items()
+    process_rows = "".join(
+        f"<tr><td>{i+1:02d}</td><td>{label}</td><td>COMPLETE</td><td>{evidence[i]}</td></tr>"
+        for i,label in enumerate(STAGES)
     )
-
+    gate_rows = "".join(
+        f"<tr><td>{name}</td><td>{status[0]}</td></tr>"
+        for name,status in gate_status.items()
+    )
     return f"""<!doctype html>
-<html><head><meta charset="utf-8"><title>MRSIF Mission Report</title>
+<html><head><meta charset="utf-8">
+<title>{mission.get('mission_id')} MRSIF Mission Report</title>
 <style>
-body{{font-family:Arial,sans-serif;margin:36px;color:#183142}}
-h1,h2{{color:#0b6787}} .meta{{background:#eef6f9;padding:12px;border-left:5px solid #0b9bc2}}
-table{{border-collapse:collapse;width:100%;margin:14px 0;font-size:12px}}
-th,td{{border:1px solid #c7d8e1;padding:7px;text-align:left;vertical-align:top}}
-th{{background:#0b4968;color:white}} .note{{font-size:11px;color:#607886}}
+body{{font-family:Arial,sans-serif;margin:36px;color:#173142}}
+h1,h2{{color:#0b6687}} table{{width:100%;border-collapse:collapse;margin:14px 0;font-size:12px}}
+th,td{{border:1px solid #c9d8df;padding:7px;vertical-align:top}} th{{background:#0b4968;color:#fff}}
+.meta{{background:#edf6f9;border-left:5px solid #149dc4;padding:12px}} .note{{font-size:11px;color:#667e8b}}
 </style></head><body>
 <h1>VODIDS · MRSIF Mission Assurance Report</h1>
 <div class="meta">
@@ -444,40 +429,36 @@ th{{background:#0b4968;color:white}} .note{{font-size:11px;color:#607886}}
 <b>Depth:</b> {mission.get('water_depth_m')} m<br>
 <b>Vehicle:</b> {mission.get('vehicle')}<br>
 <b>Target:</b> {mission.get('target_tag')}<br>
-<b>CFIHOS Context:</b> {mission.get('cfihos_code','—')} · {mission.get('cfihos_class','—')}<br>
-<b>Status:</b> MISSION ACCOMPLISHED / FINAL ACCEPTANCE PASSED
+<b>CFIHOS:</b> {mission.get('cfihos_code','—')} · {mission.get('cfihos_class','—')}<br>
+<b>Standards Context:</b> CFIHOS · OSDU · API RP 17H · ISO 13628-8<br>
+<b>Status:</b> FINAL ACCEPTANCE PASSED
 </div>
-
 <h2>Localization Assurance</h2>
-<table><tr><th>Reference</th><th>Status / Evidence</th></tr>
+<table>
+<tr><th>Reference</th><th>Final Status</th></tr>
 <tr><td>INS</td><td>{'STABLE' if st.session_state.ins_stable else 'HOLD'}</td></tr>
-<tr><td>USBL</td><td>{'VALID' if st.session_state.usbl_fix_valid else 'INVALID'} · Fix age {st.session_state.usbl_age_s:.1f} s</td></tr>
+<tr><td>USBL</td><td>{'VALID' if st.session_state.usbl_fix_valid else 'INVALID'} · {st.session_state.usbl_age_s:.1f} s fix age</td></tr>
 <tr><td>DVL</td><td>{'BOTTOM LOCK' if st.session_state.dvl_bottom_lock else 'LOST'}</td></tr>
-<tr><td>Depth + IMU</td><td>{'VALID' if (st.session_state.depth_sensor_valid and st.session_state.imu_valid) else 'HOLD'}</td></tr>
 <tr><td>Photogrammetry</td><td>{'STRUCTURE MATCH CONFIRMED' if st.session_state.photo_structure_match else 'HOLD'}</td></tr>
 <tr><td>CFIHOS Asset Identity</td><td>{'MATCHED' if st.session_state.cfihos_asset_match else 'HOLD'}</td></tr>
 </table>
-
-<h2>Mission Process Completion</h2>
-<table><tr><th>#</th><th>Process</th><th>Status</th><th>Operational Evidence / Acceptance Basis</th></tr>
-{''.join(completed)}</table>
-
+<h2>Process Completion</h2>
+<table><tr><th>#</th><th>Process</th><th>Status</th><th>Evidence</th></tr>{process_rows}</table>
 <h2>Final Gate Record</h2>
 <table><tr><th>Gate</th><th>Status</th></tr>{gate_rows}</table>
-
-<h2>Final Intervention Data</h2>
+<h2>Final Engineering Data</h2>
 <table>
-<tr><th>Parameter</th><th>Final Value</th></tr>
-<tr><td>Localization Confidence</td><td>{st.session_state.localization_pct}%</td></tr>
-<tr><td>Point-Cloud Confidence</td><td>{st.session_state.pointcloud_pct}%</td></tr>
-<tr><td>TCP/TEP Alignment</td><td>{st.session_state.alignment_deg:.1f}°</td></tr>
+<tr><th>Parameter</th><th>Value</th></tr>
+<tr><td>Localization</td><td>{st.session_state.localization_pct}%</td></tr>
+<tr><td>Point Cloud</td><td>{st.session_state.pointcloud_pct}%</td></tr>
+<tr><td>ROV / Target Error</td><td>{st.session_state.distance_error_pct:.1f}%</td></tr>
+<tr><td>TCP / TEP Alignment</td><td>{st.session_state.alignment_deg:.1f}°</td></tr>
 <tr><td>Manipulator Clearance</td><td>{st.session_state.clearance_mm} mm</td></tr>
 <tr><td>Hydraulic Pressure</td><td>{st.session_state.hydraulic_psi} psi</td></tr>
 <tr><td>Hydraulic Flow</td><td>{st.session_state.hydraulic_flow_lpm:.1f} L/min</td></tr>
 <tr><td>Valve State</td><td>100% OPEN</td></tr>
 </table>
-
-<p class="note">Development demonstration only. This report does not represent OEM certification, live field telemetry, CFIHOS endorsement, OSDU endorsement, or completion of a real offshore intervention.</p>
+<p class="note">Development simulation only. This report does not represent OEM certification, live field telemetry, CFIHOS endorsement or OSDU endorsement.</p>
 </body></html>"""
 
 # ============================================================
@@ -498,11 +479,54 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Workspace navigation remains controlled by the mission workflow.
+# Industry-standard context remains visible at all times.
+st.markdown(f"""
+<div class="std-strip">
+  <div class="std-card"><div class="std-k">Asset Information Standard</div><div class="std-v">CFIHOS</div><div class="std-n">Tag / equipment class, properties & handover context</div></div>
+  <div class="std-card"><div class="std-k">Energy Data Architecture</div><div class="std-v">OSDU®</div><div class="std-n">Subsurface / spatial / survey data context</div></div>
+  <div class="std-card"><div class="std-k">Navigation / Sensor Data</div><div class="std-v">INS · USBL · DVL · IMU · FLS</div><div class="std-n">Time-aligned operational sensor evidence</div></div>
+  <div class="std-card"><div class="std-k">Subsea Tooling / Interfaces</div><div class="std-v">API RP 17H</div><div class="std-n">Remotely operated tools & subsea interfaces</div></div>
+  <div class="std-card"><div class="std-k">ROV Interface Reference</div><div class="std-v">ISO 13628-8</div><div class="std-n">ROV interfaces on subsea production systems</div></div>
+</div>
+""", unsafe_allow_html=True)
+
+# Critical engineering parameters are always visible above the mission workspace.
+st.markdown(f"""
+<div class="eng-strip">
+  <div class="eng-card"><div class="eng-k">Current</div><div class="eng-v">{st.session_state.current_kts:.1f} kts</div><div class="eng-n">Limit ≤ {limits['current_max_kts']} kts</div></div>
+  <div class="eng-card"><div class="eng-k">Localization</div><div class="eng-v">{st.session_state.localization_pct}%</div><div class="eng-n">INS + USBL + DVL + IMU</div></div>
+  <div class="eng-card"><div class="eng-k">Point Cloud</div><div class="eng-v">{st.session_state.pointcloud_pct}%</div><div class="eng-n">Photogrammetry registration</div></div>
+  <div class="eng-card"><div class="eng-k">ROV / Target Error</div><div class="eng-v">{st.session_state.distance_error_pct:.1f}%</div><div class="eng-n">Limit ≤ {limits['distance_error_max_pct']}%</div></div>
+  <div class="eng-card"><div class="eng-k">TCP / TEP Alignment</div><div class="eng-v">{st.session_state.alignment_deg:.1f}°</div><div class="eng-n">Limit ≤ {limits['alignment_max_deg']}°</div></div>
+  <div class="eng-card"><div class="eng-k">Tool Clearance</div><div class="eng-v">{st.session_state.clearance_mm} mm</div><div class="eng-n">Minimum {limits['clearance_min_mm']} mm</div></div>
+  <div class="eng-card"><div class="eng-k">Hydraulic</div><div class="eng-v">{st.session_state.hydraulic_psi} psi</div><div class="eng-n">Required when function active</div></div>
+</div>
+""", unsafe_allow_html=True)
+
+with st.expander("Engineering Parameter Controls · Demonstration Inputs", expanded=False):
+    e1,e2,e3,e4 = st.columns(4)
+    with e1:
+        st.session_state.current_kts = st.number_input("Seafloor current (kts)",0.0,4.0,float(st.session_state.current_kts),0.1,key="top_current")
+        st.session_state.visibility_m = st.number_input("Visibility (m)",0.0,20.0,float(st.session_state.visibility_m),0.5,key="top_visibility")
+    with e2:
+        st.session_state.localization_pct = st.number_input("Localization confidence (%)",0,100,int(st.session_state.localization_pct),1,key="top_loc")
+        st.session_state.pointcloud_pct = st.number_input("Point-cloud confidence (%)",0,100,int(st.session_state.pointcloud_pct),1,key="top_pc")
+    with e3:
+        st.session_state.distance_error_pct = st.number_input("ROV-target error (%)",0.0,20.0,float(st.session_state.distance_error_pct),0.1,key="top_dist")
+        st.session_state.clearance_mm = st.number_input("Manipulator clearance (mm)",0,500,int(st.session_state.clearance_mm),5,key="top_clear")
+        st.session_state.alignment_deg = st.number_input("TCP/TEP alignment error (°)",0.0,20.0,float(st.session_state.alignment_deg),0.1,key="top_align")
+    with e4:
+        st.session_state.hydraulic_psi = st.number_input("Hydraulic pressure (psi)",0,5000,int(st.session_state.hydraulic_psi),100,key="top_hyd")
+        st.session_state.hydraulic_flow_lpm = st.number_input("Hydraulic flow (L/min)",0.0,30.0,float(st.session_state.hydraulic_flow_lpm),0.5,key="top_flow")
+        st.session_state.tool_match = st.checkbox("Correct hot stab / interface",st.session_state.tool_match,key="top_tool")
+        st.session_state.dvl_lock = st.checkbox("DVL navigation valid",st.session_state.dvl_lock,key="top_dvl")
+        st.session_state.fls_available = st.checkbox("FLS available",st.session_state.fls_available,key="top_fls")
+        st.session_state.pilot_confirmed = st.checkbox("Pilot risk review confirmed",st.session_state.pilot_confirmed,key="top_pilot")
+
+# Safe workspace navigation.
 workspace_options = ["MISSION", "OPERATIONS"]
 if st.session_state.report_unlocked:
     workspace_options += ["REPORT", "CLOSURE"]
-
 if st.session_state.workspace_page not in workspace_options:
     st.session_state.workspace_page = "OPERATIONS"
 
@@ -513,6 +537,7 @@ page = st.radio(
     horizontal=True,
     label_visibility="collapsed",
 )
+
 
 if page == "MISSION":
     st.markdown(f"""
@@ -685,34 +710,6 @@ elif page == "OPERATIONS":
         """
         components.html(svg,height=690,scrolling=False)
 
-        with st.expander("Engineering / Demonstration Parameters · Active Mission Inputs", expanded=False):
-            st.caption("These are simulation inputs supporting the Digital Twin and stage-gating logic.")
-            ep1,ep2,ep3,ep4 = st.columns(4)
-            with ep1:
-                st.session_state.current_kts = st.number_input("Seafloor current (kts)",0.0,4.0,float(st.session_state.current_kts),0.1,key="op_current")
-                st.session_state.visibility_m = st.number_input("Visibility (m)",0.0,20.0,float(st.session_state.visibility_m),0.5,key="op_visibility")
-            with ep2:
-                st.session_state.localization_pct = st.number_input("Localization confidence (%)",0,100,int(st.session_state.localization_pct),1,key="op_loc")
-                st.session_state.pointcloud_pct = st.number_input("Point-cloud confidence (%)",0,100,int(st.session_state.pointcloud_pct),1,key="op_pc")
-                st.session_state.usbl_age_s = st.number_input("USBL fix age (s)",0.0,60.0,float(st.session_state.usbl_age_s),0.1,key="op_usbl_age")
-            with ep3:
-                st.session_state.distance_error_pct = st.number_input("ROV-target error (%)",0.0,20.0,float(st.session_state.distance_error_pct),0.1,key="op_dist")
-                st.session_state.clearance_mm = st.number_input("Manipulator clearance (mm)",0,500,int(st.session_state.clearance_mm),5,key="op_clear")
-                st.session_state.alignment_deg = st.number_input("TCP/TEP alignment error (°)",0.0,20.0,float(st.session_state.alignment_deg),0.1,key="op_align")
-            with ep4:
-                st.session_state.hydraulic_psi = st.number_input("Hydraulic pressure (psi)",0,5000,int(st.session_state.hydraulic_psi),100,key="op_hyd")
-                st.session_state.hydraulic_flow_lpm = st.number_input("Hydraulic flow (L/min)",0.0,30.0,float(st.session_state.hydraulic_flow_lpm),0.5,key="op_flow")
-                st.session_state.tool_match = st.checkbox("Correct hot stab / interface",st.session_state.tool_match,key="op_tool")
-                st.session_state.dvl_lock = st.checkbox("DVL navigation valid",st.session_state.dvl_lock,key="op_dvl_nav")
-                st.session_state.fls_available = st.checkbox("FLS available",st.session_state.fls_available,key="op_fls")
-                st.session_state.pilot_confirmed = st.checkbox("Pilot risk review confirmed",st.session_state.pilot_confirmed,key="op_pilot")
-                st.session_state.ins_stable = st.checkbox("INS stable",st.session_state.ins_stable,key="op_ins")
-                st.session_state.usbl_fix_valid = st.checkbox("USBL fix valid",st.session_state.usbl_fix_valid,key="op_usbl")
-                st.session_state.dvl_bottom_lock = st.checkbox("DVL bottom lock settled",st.session_state.dvl_bottom_lock,key="op_dvl")
-                st.session_state.photo_structure_match = st.checkbox("Photogrammetry structure match",st.session_state.photo_structure_match,key="op_photo")
-                st.session_state.cfihos_asset_match = st.checkbox("CFIHOS asset identity matched",st.session_state.cfihos_asset_match,key="op_cfihos")
-
-
     with assurance_col:
         st.markdown('<div class="compact-panel"><div class="pt">Live Assurance</div><div class="ps">Active-stage gates only</div>',unsafe_allow_html=True)
         for label in ["Metocean","Point Cloud","Localization","Distance","Tool Match","Clearance","Alignment","Visibility/FLS","Pilot Review","Hydraulic"]:
@@ -728,167 +725,143 @@ elif page == "OPERATIONS":
 
 
 elif page == "REPORT":
-    if not st.session_state.report_unlocked:
-        st.warning("Final report is locked. Complete the mission in OPERATIONS and press Final Acceptance & Generate Report.")
-    else:
-        completed_count = len(STAGES)
-        total_count = len(STAGES)
-        mission_complete_flag = True
+    st.markdown(f"""
+    <div class="mission-hero">
+      <div class="hero-main"><div class="hero-label">VODIDS MRSIF Final Mission Report</div><div class="hero-value">{mission.get('mission_name')}</div></div>
+      <div class="hero-item"><div class="hero-label">Work Ref</div><div class="hero-value">{mission.get('mission_id')}</div></div>
+      <div class="hero-item"><div class="hero-label">Target</div><div class="hero-value">{mission.get('target_tag')}</div></div>
+      <div class="hero-item"><div class="hero-label">Status</div><div class="hero-value" style="color:#72f2a5">FINAL ACCEPTED</div></div>
+    </div>
+    """, unsafe_allow_html=True)
 
+    rr1,rr2 = st.columns([1.15,2.85], gap="small")
+    with rr1:
+        st.markdown('<div class="report-shell"><div class="pt">Standards & Asset Context</div>',unsafe_allow_html=True)
+        for k,v in [
+            ("CFIHOS",mission.get("cfihos_code","—")),
+            ("OSDU","Linked data context"),
+            ("Tooling","API RP 17H"),
+            ("ROV Interfaces","ISO 13628-8"),
+            ("Sensor Data","INS / USBL / DVL / IMU / FLS"),
+            ("Asset",mission.get("target_tag")),
+        ]:
+            st.markdown(f'<div class="row"><span class="rk">{k}</span><span class="rv">{v}</span></div>',unsafe_allow_html=True)
+        st.markdown('</div>',unsafe_allow_html=True)
+
+        st.markdown("<div style='height:7px'></div>",unsafe_allow_html=True)
+        st.markdown('<div class="report-shell"><div class="pt">Final Localization</div>',unsafe_allow_html=True)
+        for k,v in [
+            ("INS","STABLE"),("USBL",f"VALID · {st.session_state.usbl_age_s:.1f}s"),
+            ("DVL","BOTTOM LOCK"),("Photogrammetry","STRUCTURE MATCH"),
+            ("CFIHOS Identity","MATCHED")]:
+            st.markdown(f'<div class="row"><span class="rk">{k}</span><span class="rv">{v}</span></div>',unsafe_allow_html=True)
+        st.markdown('</div>',unsafe_allow_html=True)
+
+    with rr2:
+        evidence_map = [
+            "Scope, work reference, target and acceptance basis loaded.",
+            "Environmental limits accepted and controlled approach completed.",
+            "Navigation solution and photogrammetry target reference established.",
+            "StationKeep / DVL bottom lock established.",
+            "Correct hot stab and asset interface verified.",
+            "TCP aligned to TEP within accepted geometry.",
+            "Hot stab inserted after active gates passed.",
+            "Hydraulic function applied and valve opened.",
+            "Result verified and hot stab withdrawn.",
+            "Evidence accepted; mission released for closure."
+        ]
+        rows = "".join(
+            f"<tr><td>{i+1:02d}</td><td>{label}</td><td style='color:#72f2a5;font-weight:700'>COMPLETE</td><td>{evidence_map[i]}</td></tr>"
+            for i,label in enumerate(STAGES)
+        )
         st.markdown(f"""
-        <div class="mission-hero">
-          <div class="hero-main"><div class="hero-label">VODIDS MRSIF Final Mission Report</div><div class="hero-value">{mission.get('mission_name')}</div></div>
-          <div class="hero-item"><div class="hero-label">Work Ref</div><div class="hero-value">{mission.get('mission_id')}</div></div>
-          <div class="hero-item"><div class="hero-label">Target</div><div class="hero-value">{mission.get('target_tag')}</div></div>
-          <div class="hero-item"><div class="hero-label">Report Status</div><div class="hero-value" style="color:#72f2a5">FINAL ACCEPTED</div></div>
+        <div class="report-shell">
+          <div class="pt">Mission Process Completion</div>
+          <table class="report-table"><thead><tr><th>#</th><th>Process</th><th>Status</th><th>Evidence</th></tr></thead><tbody>{rows}</tbody></table>
         </div>
-        """, unsafe_allow_html=True)
+        """,unsafe_allow_html=True)
 
-        r1, r2 = st.columns([1.15, 2.85], gap="small")
-        with r1:
-            st.markdown('<div class="report-shell"><h3>Mission Summary</h3>', unsafe_allow_html=True)
-            for k,v in [
-                ("Mission", mission.get("mission_name")),
-                ("Depth", f"{mission.get('water_depth_m')} m"),
-                ("Vehicle", mission.get("vehicle")),
-                ("Manipulator", mission.get("manipulator","—")),
-                ("Target", mission.get("target_tag")),
-                ("Asset Class", mission.get("cfihos_class","—")),
-                ("CFIHOS Code", mission.get("cfihos_code","—")),
-                ("Interface", mission.get("interface_standard","—")),
-                ("Completion", f"{completed_count}/{total_count} processes"),
-            ]:
-                st.markdown(f'<div class="row"><span class="rk">{k}</span><span class="rv">{v}</span></div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            st.markdown("<div style='height:7px'></div>", unsafe_allow_html=True)
-            st.markdown('<div class="report-shell"><h3>Final Localization Basis</h3>', unsafe_allow_html=True)
-            for k,v in [
-                ("INS","STABLE"),
-                ("USBL",f"VALID · {st.session_state.usbl_age_s:.1f} s"),
-                ("DVL","BOTTOM LOCK"),
-                ("Depth + IMU","VALID"),
-                ("Photogrammetry","STRUCTURE MATCHED"),
-                ("CFIHOS Identity","MATCHED"),
-            ]:
-                st.markdown(f'<div class="row"><span class="rk">{k}</span><span class="rv">{v}</span></div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        with r2:
-            evidence_map = [
-                "Mission profile and acceptance basis loaded.",
-                "Metocean gate accepted and controlled approach completed.",
-                "USBL/INS/DVL solution and photogrammetry target reference established.",
-                "DVL bottom lock and station-keeping reference accepted.",
-                "Correct hot stab / interface validated against target asset context.",
-                "TCP aligned to TEP within angular and clearance limits.",
-                "Hot stab insertion completed after all active gates passed.",
-                "Hydraulic pressure/flow applied; valve function completed.",
-                "Valve state, navigation, tooling and evidence verified; tool withdrawn.",
-                "Final evidence accepted; mission eligible for closure and handover.",
-            ]
-            rows = ""
-            for i,label in enumerate(STAGES):
-                rows += f"<tr><td>{i+1:02d}</td><td>{label}</td><td style='color:#72f2a5;font-weight:700'>COMPLETE</td><td>{evidence_map[i]}</td></tr>"
-            st.markdown(f"""
-            <div class="report-shell">
-              <h3>Process Completion Record</h3>
-              <table class="report-table">
-                <thead><tr><th>#</th><th>Process</th><th>Status</th><th>Operational Evidence</th></tr></thead>
-                <tbody>{rows}</tbody>
-              </table>
-            </div>
-            """, unsafe_allow_html=True)
-
-        report_html = build_mission_report_html(mission, stage, gate_status)
-        d1,d2,d3 = st.columns([1.2,1.2,2.6])
-        with d1:
-            st.download_button(
-                "Download Final Mission Report",
-                data=report_html.encode("utf-8"),
-                file_name=f"{mission.get('mission_id')}_MRSIF_Final_Report.html",
-                mime="text/html",
-                use_container_width=True,
-            )
-        with d2:
-            if st.button("Return to Operations", use_container_width=True):
-                st.session_state.workspace_page = "OPERATIONS"
-                st.rerun()
-        with d3:
-            st.markdown("""
-            <div class="restart-note">
-            To replay or start the demonstration again, return to <b>OPERATIONS</b>, open <b>Mission Manager</b> at the top,
-            and click <b>Reload Default Mission</b>. This resets the mission, report lock and process state.
-            </div>
-            """, unsafe_allow_html=True)
+    report_html = build_downloadable_report(mission, gate_status)
+    rdl1,rdl2,rdl3 = st.columns([1.25,1.1,2.65])
+    with rdl1:
+        st.download_button(
+            "Download Final Mission Report",
+            data=report_html.encode("utf-8"),
+            file_name=f"{mission.get('mission_id')}_MRSIF_Final_Report.html",
+            mime="text/html",
+            use_container_width=True,
+        )
+    with rdl2:
+        if st.button("Return to Operations",use_container_width=True):
+            st.session_state.workspace_page = "OPERATIONS"
+            st.rerun()
+    with rdl3:
+        st.info("To replay the demonstration: return to OPERATIONS → Mission Manager → Reload Default Mission.")
 
 elif page == "CLOSURE":
-    if not st.session_state.report_unlocked:
-        st.warning("Closure is locked until Final Acceptance is completed.")
-    else:
-        st.markdown("""
-        <div class="report-shell">
-          <h3>Mission Closure & Data Handover</h3>
-          <p>The intervention has passed final acceptance. Mission evidence can now be packaged for client review,
-          lifecycle records and data handover. The demonstration keeps the closure step separate from live execution
-          so mission completion is never inferred merely from vehicle movement.</p>
-        </div>
-        """, unsafe_allow_html=True)
-        c1,c2,c3 = st.columns(3)
-        with c1:
-            st.metric("Localization Confidence",f"{st.session_state.localization_pct}%")
-            st.metric("Point-Cloud Confidence",f"{st.session_state.pointcloud_pct}%")
-        with c2:
-            st.metric("Final Alignment",f"{st.session_state.alignment_deg:.1f}°")
-            st.metric("Final Clearance",f"{st.session_state.clearance_mm} mm")
-        with c3:
-            st.metric("Valve State","100% OPEN")
-            st.metric("Asset",mission.get("target_tag"))
+    st.markdown("""
+    <div class="report-shell">
+      <div class="pt">Mission Closure & Data Handover</div>
+      <p style="color:#b8cbd5;font-size:9px;line-height:1.45">
+      Final acceptance has passed. Mission evidence is now available for client review,
+      lifecycle records and governed data handover. Closure remains separate from live operations
+      so completion is based on verified mission outcome, not vehicle motion alone.
+      </p>
+    </div>
+    """,unsafe_allow_html=True)
+    c1,c2,c3 = st.columns(3)
+    with c1:
+        st.metric("Localization Confidence",f"{st.session_state.localization_pct}%")
+        st.metric("Point-Cloud Confidence",f"{st.session_state.pointcloud_pct}%")
+    with c2:
+        st.metric("Final Alignment",f"{st.session_state.alignment_deg:.1f}°")
+        st.metric("Final Clearance",f"{st.session_state.clearance_mm} mm")
+    with c3:
+        st.metric("Valve State","100% OPEN")
+        st.metric("Asset",mission.get("target_tag"))
+    st.info("To start again: OPERATIONS → Mission Manager → Reload Default Mission.")
 
-        st.markdown("""
-        <div class="restart-note">
-        To return to the demonstration, choose <b>OPERATIONS</b>. To start again from Mission Setup,
-        use <b>Mission Manager → Reload Default Mission</b>.
-        </div>
-        """, unsafe_allow_html=True)
+
+def unlock_final_report():
+    st.session_state.report_unlocked = True
+    st.session_state.workspace_page = "REPORT"
 
 # ============================================================
 # OPERATIONS COMMAND BAR
 # ============================================================
 if page == "OPERATIONS":
     if stage < 9:
-        cmd1,cmd2,cmd3 = st.columns([1,1.35,2.3])
+        cmd1,cmd2,cmd3 = st.columns([1,1.25,2.4])
         with cmd1:
-            if st.button("Reset Mission", use_container_width=True):
+            if st.button("Reset Mission",use_container_width=True):
                 load_mission_to_state(st.session_state.mission)
                 st.rerun()
         with cmd2:
-            if st.button("Advance Mission →", use_container_width=True, disabled=not stage_clear):
-                st.session_state.stage = min(9, stage+1)
+            if st.button("Advance Mission →",use_container_width=True,disabled=(not stage_clear)):
+                st.session_state.stage = min(9,stage+1)
                 if st.session_state.stage >= 9:
                     st.session_state.mission_complete = True
                 st.rerun()
         with cmd3:
             if stage_clear:
-                st.info(f"{STAGES[stage]} accepted · review the Digital Twin and active gates, then advance one process.")
+                st.info(f"{STAGES[stage]} accepted · review the process, Digital Twin and Live Assurance before advancing.")
             else:
                 st.warning(f"Advance inhibited · resolve: {', '.join(active_holds)}")
     else:
-        fa1,fa2,fa3 = st.columns([1.1,1.8,2.2])
-        with fa1:
-            if st.button("Reload Mission", use_container_width=True):
+        f1,f2,f3 = st.columns([1.1,1.9,2.1])
+        with f1:
+            if st.button("Reload Mission",use_container_width=True):
                 load_mission_to_state(st.session_state.mission)
                 st.rerun()
-        with fa2:
-            if st.button("Final Acceptance & Generate Report", use_container_width=True):
-                if stage_clear:
-                    st.session_state.report_unlocked = True
-                    st.session_state.workspace_page = "REPORT"
-                    st.rerun()
-                else:
-                    st.warning(f"Final acceptance HOLD: {', '.join(active_holds)}")
-        with fa3:
-            st.success("Mission processes completed. Perform Final Acceptance to unlock the VODIDS mission report and closure package.")
+        with f2:
+            st.button(
+                "Final Acceptance & Generate Report",
+                use_container_width=True,
+                on_click=unlock_final_report,
+                disabled=(not stage_clear),
+            )
+        with f3:
+            st.success("All ten operational processes completed. Final Acceptance unlocks the VODIDS mission report and closure package.")
 
 ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-st.markdown(f'<div style="margin-top:9px;border-top:1px solid #1e3141;padding-top:7px;color:#6f8798;font-size:8px;display:flex;justify-content:space-between"><span>VODIDS · MRSIF v7.5 Final Share Demo</span><span>Simulation only · {ts}</span></div>', unsafe_allow_html=True)
+st.markdown(f'<div style="margin-top:9px;border-top:1px solid #1e3141;padding-top:7px;color:#6f8798;font-size:8px;display:flex;justify-content:space-between"><span>VODIDS · MRSIF v7.6 Standards & Mission Assurance Console</span><span>Simulation only · {ts}</span></div>', unsafe_allow_html=True)
