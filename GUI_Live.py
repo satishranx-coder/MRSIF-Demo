@@ -279,70 +279,41 @@ div[data-testid="stSlider"] label {
 }
 
 
-/* MRSIF readable KPI cards */
-.mrsif-kpi-grid {
-    display:grid;
-    grid-template-columns: repeat(5, minmax(0,1fr));
-    gap:8px;
-    margin-top:8px;
+/* Safe KPI readability fix — presentation only */
+.ops-kpi {
+    background:#0c1824;
+    border:1px solid #2b4356;
+    border-radius:10px;
+    padding:10px 9px;
+    min-height:122px;
+    box-sizing:border-box;
 }
-.mrsif-kpi {
-    background:linear-gradient(180deg,#0d1a27,#0a1520);
-    border:1px solid #29465c;
-    border-radius:12px;
-    padding:10px 10px 9px;
-    min-height:112px;
-    overflow:hidden;
-}
-.mrsif-kpi-title {
-    color:#9db2c2;
+.ops-kpi-title {
+    color:#a9bdcb;
     font-size:10px;
     font-weight:700;
-    line-height:1.18;
-    min-height:24px;
+    line-height:1.25;
+    min-height:28px;
 }
-.mrsif-kpi-value {
-    color:#f4fbff;
-    font-size:27px;
-    line-height:1.0;
+.ops-kpi-value {
+    color:#ffffff;
+    font-size:24px;
     font-weight:900;
-    margin-top:8px;
-    letter-spacing:-0.4px;
+    line-height:1.1;
+    margin-top:7px;
 }
-.mrsif-kpi-unit {
-    color:#8da3b4;
-    font-size:10px;
-    font-weight:700;
-    margin-left:3px;
-}
-.mrsif-kpi-status {
-    display:inline-block;
-    margin-top:9px;
-    padding:4px 7px;
-    border-radius:14px;
+.ops-kpi-status {
+    color:#72f2a5;
     font-size:9px;
     font-weight:800;
-    line-height:1.1;
-    max-width:100%;
+    margin-top:8px;
+    line-height:1.2;
 }
-.mrsif-kpi-status.pass {
-    color:#72f2a5;
-    background:rgba(43,213,118,.10);
-    border:1px solid rgba(43,213,118,.28);
-}
-.mrsif-kpi-status.hold {
-    color:#ffd079;
-    background:rgba(255,189,74,.10);
-    border:1px solid rgba(255,189,74,.28);
-}
-.mrsif-kpi-note {
-    color:#718a9c;
+.ops-kpi-note {
+    color:#7f97aa;
     font-size:8.5px;
-    line-height:1.15;
-    margin-top:6px;
-}
-@media (max-width: 1200px) {
-  .mrsif-kpi-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    line-height:1.2;
+    margin-top:5px;
 }
 
 </style>
@@ -694,64 +665,59 @@ with center:
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Navigation / geometry KPI strip
+    # Navigation confidence strip — same operational values/logic, clearer display only
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+    k1, k2, k3, k4, k5 = st.columns(5)
 
-    kpi_cards = [
-        {
-            "title": "ROV Localization Confidence",
-            "value": f"{localization_conf}",
-            "unit": "%",
-            "status": "PASS" if localization_pass else "HOLD",
-            "status_cls": "pass" if localization_pass else "hold",
-            "note": "INS + DVL + IMU navigation solution"
-        },
-        {
-            "title": "Photogrammetry Point-Cloud Confidence",
-            "value": f"{pointcloud_conf}",
-            "unit": "%",
-            "status": "REGISTERED" if pointcloud_pass else "REVALIDATE",
-            "status_cls": "pass" if pointcloud_pass else "hold",
-            "note": "Registered operational 3D reference"
-        },
-        {
-            "title": "ROV-to-Target Distance Error",
-            "value": f"{distance_error_pct:.1f}",
-            "unit": "%",
-            "status": "WITHIN LIMIT" if distance_pass else "OUTSIDE LIMIT",
-            "status_cls": "pass" if distance_pass else "hold",
-            "note": "Mission tolerance limit ≤ 5%"
-        },
-        {
-            "title": "Manipulator / Tool Clearance",
-            "value": f"{clearance_mm}",
-            "unit": "mm",
-            "status": "CLEAR" if clearance_pass else "HOLD",
-            "status_cls": "pass" if clearance_pass else "hold",
-            "note": "Minimum demo clearance 50 mm"
-        },
-        {
-            "title": "Visual / FLS Localization Support",
-            "value": f"{visibility_m:.1f}",
-            "unit": "m",
-            "status": "FLS BACKUP" if degraded_visibility and fls_available else "VISUAL + FLS",
-            "status_cls": "pass" if visibility_supported else "hold",
-            "note": "Degraded-visibility support path"
-        },
-    ]
-
-    cards_html = '<div class="mrsif-kpi-grid">'
-    for card in kpi_cards:
-        cards_html += f"""
-        <div class="mrsif-kpi">
-            <div class="mrsif-kpi-title">{card['title']}</div>
-            <div class="mrsif-kpi-value">{card['value']}<span class="mrsif-kpi-unit">{card['unit']}</span></div>
-            <div class="mrsif-kpi-status {card['status_cls']}">{card['status']}</div>
-            <div class="mrsif-kpi-note">{card['note']}</div>
+    with k1:
+        st.markdown(f"""
+        <div class="ops-kpi">
+            <div class="ops-kpi-title">ROV Localization Confidence</div>
+            <div class="ops-kpi-value">{localization_conf}%</div>
+            <div class="ops-kpi-status">{"PASS" if localization_pass else "HOLD"}</div>
+            <div class="ops-kpi-note">INS + DVL + IMU</div>
         </div>
-        """
-    cards_html += '</div>'
-    st.markdown(cards_html, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+
+    with k2:
+        st.markdown(f"""
+        <div class="ops-kpi">
+            <div class="ops-kpi-title">Point-Cloud Confidence</div>
+            <div class="ops-kpi-value">{pointcloud_conf}%</div>
+            <div class="ops-kpi-status">{"REGISTERED" if pointcloud_pass else "REVALIDATE"}</div>
+            <div class="ops-kpi-note">Photogrammetry reference</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with k3:
+        st.markdown(f"""
+        <div class="ops-kpi">
+            <div class="ops-kpi-title">ROV-to-Target Distance Error</div>
+            <div class="ops-kpi-value">{distance_error_pct:.1f}%</div>
+            <div class="ops-kpi-status">{"WITHIN LIMIT" if distance_pass else "HOLD"}</div>
+            <div class="ops-kpi-note">Mission limit ≤ 5%</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with k4:
+        st.markdown(f"""
+        <div class="ops-kpi">
+            <div class="ops-kpi-title">Manipulator / Tool Clearance</div>
+            <div class="ops-kpi-value">{clearance_mm} mm</div>
+            <div class="ops-kpi-status">{"CLEAR" if clearance_pass else "HOLD"}</div>
+            <div class="ops-kpi-note">Minimum demo clearance 50 mm</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with k5:
+        st.markdown(f"""
+        <div class="ops-kpi">
+            <div class="ops-kpi-title">Visibility / FLS Support</div>
+            <div class="ops-kpi-value">{visibility_m:.1f} m</div>
+            <div class="ops-kpi-status">{"FLS BACKUP" if degraded_visibility else "VISUAL + FLS"}</div>
+            <div class="ops-kpi-note">Degraded-visibility localization support</div>
+        </div>
+        """, unsafe_allow_html=True)
 
 # RIGHT — readiness + OSDU + decision
 with right:
