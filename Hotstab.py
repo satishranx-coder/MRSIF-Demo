@@ -1,5 +1,6 @@
 
 import streamlit as st
+import streamlit.components.v1 as components
 import numpy as np
 import plotly.graph_objects as go
 from dataclasses import dataclass
@@ -691,7 +692,23 @@ with center:
       </svg>
     </div>
     """
-    st.markdown(sim_svg, unsafe_allow_html=True)
+    components.html(
+        f"""
+        <style>
+            html, body {{
+                margin: 0;
+                padding: 0;
+                background: #07131e;
+                overflow: hidden;
+                font-family: Inter, "Segoe UI", Arial, sans-serif;
+            }}
+            * {{ box-sizing: border-box; }}
+        </style>
+        {sim_svg}
+        """,
+        height=625,
+        scrolling=False,
+    )
 
     st.markdown('</div>', unsafe_allow_html=True)
 
