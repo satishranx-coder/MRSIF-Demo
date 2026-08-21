@@ -17,6 +17,7 @@ import html
 import json
 import math
 import mimetypes
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -326,6 +327,7 @@ SCENARIOS: dict[str, dict[str, Any]] = {
         "current_shear": 0.37,
         "harmonic_peak_current": 1.85,
         "current_direction": 247,
+        "pile_offset_bearing_deg": 145.0,
     },
     "Sound velocity profile invalid / stale": {
         "svp_valid": False,
@@ -364,6 +366,7 @@ BASE_CONTEXT: dict[str, Any] = {
     "harmonic_peak_current": 1.20,
     "tidal_period_h": 12.42,
     "operation_hour": 3.10,
+    "pile_offset_bearing_deg": 32.0,
     "telemetry_link": True,
     "mbes_ready": True,
     "sonar_ready": True,
@@ -488,6 +491,8 @@ def evaluate_gates(data: dict[str, Any]) -> list[dict[str, str]]:
         "GO" if data["telemetry_link"] else "HOLD",
         "GO" if data["current_profile_valid"] else "HOLD",
         "GO" if data["vessel_motion_valid"] else "HOLD",
+        "GO" if data["coordinate_frame_valid"] else "HOLD",
+        "GO" if data["time_sync_valid"] else "HOLD",
     )
 
     touchdown_state = worst_status(
@@ -539,13 +544,14 @@ def evaluate_gates(data: dict[str, Any]) -> list[dict[str, str]]:
     ):
         hammer_state = "HOLD"
 
+    required_records = len(PHASES) - 1
     close_state = worst_status(
         low_bad(
             data["post_coverage"],
             DEMO_LIMITS["survey_coverage_hold"],
             DEMO_LIMITS["survey_coverage_watch"],
         ),
-        "GO" if data["records"] >= 7 else "HOLD",
+        "GO" if data["records"] >= required_records else "HOLD",
         "GO" if data["telemetry_link"] else "HOLD",
         "GO" if data["drive_disposition_closed"] else "HOLD",
     )
@@ -566,8 +572,8 @@ def evaluate_gates(data: dict[str, Any]) -> list[dict[str, str]]:
         {
             "name": "Controlled lowering",
             "status": lowering_state,
-            "detail": f'{data["descent_rate"]:.2f} m/s descent; pitch/roll {data["pitch"]:.2f}°/{data["roll"]:.2f}°; depth-avg current {data["depth_avg_current"]:.2f} m/s',
-            "action": "Stop descent at the approved hold point and restore the load, attitude, current-profile or motion evidence.",
+            "detail": f'{data["descent_rate"]:.2f} m/s descent; pitch/roll {data["pitch"]:.2f}°/{data["roll"]:.2f}°; current {data["depth_avg_current"]:.2f} m/s; frame/clock {"valid" if data["coordinate_frame_valid"] and data["time_sync_valid"] else "invalid"}',
+            "action": "Stop descent at the approved hold point and restore the load, attitude, current-profile, motion, coordinate-frame or clock evidence.",
         },
         {
             "name": "Touchdown & levelling",
@@ -596,7 +602,7 @@ def evaluate_gates(data: dict[str, Any]) -> list[dict[str, str]]:
         {
             "name": "As-built closeout",
             "status": close_state,
-            "detail": f'{data["post_coverage"]:.1f}% post-survey coverage; {data["records"]}/7 records; drive disposition {"closed" if data["drive_disposition_closed"] else "open"}',
+            "detail": f'{data["post_coverage"]:.1f}% post-survey coverage; {data["records"]}/{required_records} phase records; drive disposition {"closed" if data["drive_disposition_closed"] else "open"}',
             "action": "Keep the work reference open and obtain the missing survey, installation or engineering-disposition record.",
         },
     ]
@@ -803,7 +809,7 @@ SCENE_TEMPLATE = r"""
 
   <!-- Pile and MENCK hammer -->
   <g opacity="__PILE_OPACITY__">
-    <rect x="619" y="__PILE_TOP__" width="32" height="calc(__PILE_BOTTOM__ - __PILE_TOP__)" fill="#aeb9bc" stroke="#435157" stroke-width="5"/>
+    <rect x="619" y="__PILE_TOP__" width="32" height="__PILE_HEIGHT__" fill="#aeb9bc" stroke="#435157" stroke-width="5"/>
     <path d="M626 __PILE_TOP__V__PILE_BOTTOM__M644 __PILE_TOP__V__PILE_BOTTOM__" stroke="#e7eceb" stroke-width="3" opacity=".7"/>
     <path d="M614 __PILE_BOTTOM__H656L649 675H621Z" fill="#68767b" stroke="#435157" stroke-width="4"/>
     <text x="670" y="545" class="lab" fill="#f2e6c8">SKIRT PILE</text>
@@ -901,14 +907,19 @@ SCENE_TEMPLATE = r"""
 def render_scene(phase_index: int, data: dict[str, Any], usbl_host: str) -> str:
     scene = SCENE_TEMPLATE
     geometry = phase_geometry(phase_index, data, usbl_host)
+    geometry["PILE_HEIGHT"] = str(
+        int(geometry["PILE_BOTTOM"]) - int(geometry["PILE_TOP"])
+    )
     for token, value in geometry.items():
         scene = scene.replace(f"__{token}__", value)
-    # SVG does not support arithmetic inside rect height. Replace with a value.
-    pile_height = int(geometry["PILE_BOTTOM"]) - int(geometry["PILE_TOP"])
-    scene = scene.replace(f'height="calc({geometry["PILE_BOTTOM"]} - {geometry["PILE_TOP"]})"', f'height="{pile_height}"')
     scene = scene.replace("__WAVEBOT_URI__", asset_data_uri("wavebot-real.jpg"))
     scene = scene.replace("__RIG_SCREEN_URI__", asset_data_uri("lidar-pointcloud.jpg"))
     scene = scene.replace("__NAVALT_SCREEN_URI__", asset_data_uri("gemini-template.jpg"))
+    unresolved_tokens = sorted(set(re.findall(r"__[A-Z0-9_]+__", scene)))
+    if unresolved_tokens:
+        raise ValueError(
+            "Unresolved SVG template tokens: " + ", ".join(unresolved_tokens)
+        )
     return scene
 
 
@@ -974,7 +985,7 @@ def phase_evidence(phase_index: int, data: dict[str, Any], usbl_host: str) -> li
         [
             ("Post-install coverage", f'{data["post_coverage"]:.1f}%', "SIMULATED MEASUREMENT"),
             ("Telemetry archive", "Rig + NAVALT mirror", "USV DATA DISTRIBUTION"),
-            ("Evidence records", f'{data["records"]} of 7', "MRSIF COMPLETENESS"),
+            ("Phase audit records", f'{data["records"]} of {len(PHASES) - 1}', "MRSIF COMPLETENESS"),
             ("Engineering disposition", "Closed" if data["drive_disposition_closed"] else "Open", "AUTHORIZED REVIEW RECORD"),
         ],
     ]
@@ -1004,7 +1015,7 @@ def render_engineering_dashboard(data: dict[str, Any], gates: list[dict[str, str
 
     offset_watch, offset_hold = 0.22, 0.30
     offset_radius = min(data["pile_offset"] / offset_hold * 84, 104)
-    offset_angle = math.radians(float(data.get("pile_offset_bearing_deg", 32.0)) - 90)
+    offset_angle = math.radians(float(data["pile_offset_bearing_deg"]) - 90)
     offset_x = 145 + offset_radius * math.cos(offset_angle)
     offset_y = 115 + offset_radius * math.sin(offset_angle)
     watch_radius = offset_watch / offset_hold * 84
@@ -1164,13 +1175,24 @@ USBL host configuration: {usbl_host}
 - Template pitch / roll: {data['pitch']:.2f}° / {data['roll']:.2f}°
 - Movement after set-down: {data['movement']:.2f} m
 - Local seabed-surface change: {data['bed_change']:.2f} m — geometry/change evidence only
-- Pile offset / verticality: {data['pile_offset']:.2f} m / {data['pile_verticality']:.2f}°
+- Pile offset / bearing / verticality: {data['pile_offset']:.2f} m / {data['pile_offset_bearing_deg']:.0f}° / {data['pile_verticality']:.2f}°
 - Hammer energy / blow rate / penetration trend: {data['hammer_energy']} kJ / {data['blow_rate']}/min / {data['penetration']} mm per 10 blows
 
 ## Mandatory boundary
 
 All displayed thresholds are configured demonstration examples unless replaced with approved project values. MRSIF provides evidence organization and advisory gating only. It does not operate the crane or hammer, determine refusal, perform CAPWAP/PDA analysis, establish soil resistance, verify class compliance or certify foundation capacity.
 """
+
+
+def render_stretch_dataframe(rows: list[dict[str, str]]) -> None:
+    """Use the current Streamlit width API with compatibility fallbacks."""
+    try:
+        st.dataframe(rows, width="stretch", hide_index=True)
+    except TypeError:
+        try:
+            st.dataframe(rows, use_container_width=True, hide_index=True)
+        except TypeError:
+            st.dataframe(rows, use_container_width=True)
 
 
 def render_workspace(
@@ -1446,6 +1468,110 @@ def render_browser_mission(
     """
 
 
+def run_assurance_self_test() -> dict[str, int | str]:
+    """Run fast, dependency-free regression checks before presenting the UI.
+
+    The checks deliberately use explicit conditions rather than ``assert`` so
+    they remain active even when Python is launched with optimization enabled.
+    A regression raises RuntimeError and prevents a misleading demo from being
+    presented with internally inconsistent gate or rendering behaviour.
+    """
+    failures: list[str] = []
+    check_count = 0
+
+    def check(condition: bool, label: str) -> None:
+        nonlocal check_count
+        check_count += 1
+        if not condition:
+            failures.append(label)
+
+    nominal = scenario_data("Nominal controlled installation")
+    nominal_gates = evaluate_gates(nominal)
+    for gate_index, gate in enumerate(nominal_gates, start=1):
+        check(gate["status"] == "GO", f"Nominal G{gate_index} expected GO")
+
+    frame_states = [
+        gate["status"]
+        for gate in evaluate_gates(
+            scenario_data("Coordinate frame / time sync invalid")
+        )
+    ]
+    for gate_index in (1, 2, 4):
+        check(
+            frame_states[gate_index] == "HOLD",
+            f"Invalid frame/clock expected HOLD at G{gate_index + 1}",
+        )
+
+    expected_scenario_holds = {
+        "SST tilt after touchdown": 3,
+        "Acoustic beacon geometry degraded": 4,
+        "Levelling sling tension imbalance": 1,
+        "Gemini acoustic view unavailable": 5,
+        "Low penetration trend / engineering review": 6,
+        "NORBIT survey coverage gap": 0,
+        "Surface current exceeds installation limit": 2,
+        "Sound velocity profile invalid / stale": 0,
+        "USV telemetry timeout / no input": 0,
+        "Depth-current profile unavailable": 2,
+        "Vessel-motion feed unavailable": 2,
+        "PDA telemetry / subsea cable readiness gap": 6,
+        "Seabed change after touchdown": 3,
+    }
+    for scenario_name, gate_index in expected_scenario_holds.items():
+        scenario_gates = evaluate_gates(scenario_data(scenario_name))
+        check(
+            scenario_gates[gate_index]["status"] == "HOLD",
+            f"{scenario_name} expected HOLD at G{gate_index + 1}",
+        )
+
+    incomplete_closeout = dict(nominal)
+    incomplete_closeout["records"] = len(PHASES) - 2
+    incomplete_gate = evaluate_gates(incomplete_closeout)[-1]
+    check(incomplete_gate["status"] == "HOLD", "Incomplete closeout expected HOLD")
+    check(
+        f"/{len(PHASES) - 1} phase records" in incomplete_gate["detail"],
+        "Closeout record requirement does not match prior phase count",
+    )
+
+    for phase_index in range(len(PHASES)):
+        scene = render_scene(phase_index, nominal, "Wavebot USV")
+        check(
+            re.search(r"__[A-Z0-9_]+__", scene) is None,
+            f"Phase {phase_index + 1} contains unresolved SVG tokens",
+        )
+        check(
+            'height="calc(' not in scene,
+            f"Phase {phase_index + 1} contains unsupported SVG height arithmetic",
+        )
+
+    report = build_downloadable_report(
+        "Nominal controlled installation", nominal, nominal_gates, "Wavebot USV"
+    )
+    check(
+        "NOT A COMPLIANCE CERTIFICATE" in report,
+        "Report assurance boundary is missing",
+    )
+    check(
+        "Class Compliance: Verified" not in report,
+        "Report contains an unsupported compliance claim",
+    )
+
+    if failures:
+        raise RuntimeError(
+            "MRSIF assurance self-test failed: " + "; ".join(failures)
+        )
+
+    return {
+        "status": "PASS",
+        "checks": check_count,
+        "scenarios": len(SCENARIOS),
+        "scenes": len(PHASES),
+    }
+
+
+self_test_result = run_assurance_self_test()
+
+
 selector_cols = st.columns([1.3, 1.0, 0.8])
 with selector_cols[0]:
     scenario_name = st.selectbox("Demonstration scenario", options=list(SCENARIOS))
@@ -1490,6 +1616,7 @@ with st.expander("Manual engineering sandbox — configured inputs, not verified
             manual_data["fix_uncertainty"] = st.slider("USBL fix uncertainty (m)", 0.0, 2.0, float(manual_data["fix_uncertainty"]), 0.01)
             manual_data["gemini_confidence"] = st.slider("Gemini interpretation confidence (%)", 0, 100, int(manual_data["gemini_confidence"]), 1)
             manual_data["pile_offset"] = st.slider("Pile centre offset (m)", 0.0, 1.0, float(manual_data["pile_offset"]), 0.01)
+            manual_data["pile_offset_bearing_deg"] = st.slider("Pile offset bearing (°)", 0.0, 359.0, float(manual_data["pile_offset_bearing_deg"]), 1.0)
             manual_data["pile_verticality"] = st.slider("Pile verticality observation (°)", 0.0, 2.0, float(manual_data["pile_verticality"]), 0.01)
             manual_data["bed_change"] = st.slider("Local seabed-surface change (m)", 0.0, 1.0, float(manual_data["bed_change"]), 0.01)
 
@@ -1537,7 +1664,14 @@ with st.expander("Manual engineering sandbox — configured inputs, not verified
         with manual_detail_cols[2]:
             manual_data["drive_disposition_closed"] = st.checkbox("Driving disposition closed", value=True)
         with manual_detail_cols[3]:
-            manual_data["records"] = st.slider("Evidence records complete", 0, 7, 7, 1)
+            required_records = len(PHASES) - 1
+            manual_data["records"] = st.slider(
+                "Prior-phase audit records complete",
+                0,
+                required_records,
+                required_records,
+                1,
+            )
 
         profile_label = "Manual engineering sandbox"
         active_data = manual_data
@@ -1564,9 +1698,15 @@ with dashboard_tab:
     )
     st.markdown("#### Dynamic gate and risk-action matrix")
     st.caption("The matrix shows current evidence state and required response. It does not invent likelihood, residual risk or ALARP acceptance.")
-    st.dataframe(gate_action_rows(active_gates), use_container_width=True, hide_index=True)
+    render_stretch_dataframe(gate_action_rows(active_gates))
 
 with evidence_tab:
+    st.success(
+        f"Built-in assurance self-test: {self_test_result['status']} • "
+        f"{self_test_result['checks']} checks • "
+        f"{self_test_result['scenarios']} scenarios • "
+        f"{self_test_result['scenes']} SVG scenes"
+    )
     st.warning("Draft demonstration evidence only — not a compliance certificate, driveability analysis or pile-capacity certification.")
     st.text_area("Draft evidence report preview", report_text, height=520)
     st.download_button(
