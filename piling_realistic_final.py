@@ -53,7 +53,7 @@ def asset_data_uri(filename: str) -> str:
 
 st.set_page_config(
     page_title="MRSIF | SST & Pile Installation Mission",
-    page_icon="âš“",
+    page_icon="⚓",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -422,25 +422,25 @@ def evaluate_gates(data: dict[str, Any]) -> list[dict[str, str]]:
         {
             "name": "Controlled lowering",
             "status": lowering_state,
-            "detail": f'{data["descent_rate"]:.2f} m/s descent; pitch/roll {data["pitch"]:.2f}Â°/{data["roll"]:.2f}Â°; current {data["surface_current"]:.2f} m/s',
+            "detail": f'{data["descent_rate"]:.2f} m/s descent; pitch/roll {data["pitch"]:.2f}°/{data["roll"]:.2f}°; current {data["surface_current"]:.2f} m/s',
             "action": "Stop descent at a controlled hold point and correct the load/attitude condition.",
         },
         {
             "name": "Touchdown & levelling",
             "status": touchdown_state,
-            "detail": f'pitch/roll {data["pitch"]:.2f}Â°/{data["roll"]:.2f}Â°; movement {data["movement"]:.2f} m',
+            "detail": f'pitch/roll {data["pitch"]:.2f}°/{data["roll"]:.2f}°; movement {data["movement"]:.2f} m',
             "action": "Maintain the SST on controlled support and obtain the levelling/settlement disposition.",
         },
         {
             "name": "Template localization",
             "status": localization_state,
-            "detail": f'{data["beacons"]} beacon observations; Â±{data["fix_uncertainty"]:.2f} m; SVP {"valid" if data["svp_valid"] else "invalid"}',
+            "detail": f'{data["beacons"]} beacon observations; ±{data["fix_uncertainty"]:.2f} m; SVP {"valid" if data["svp_valid"] else "invalid"}',
             "action": "Restore independent acoustic observations, valid sound-speed correction and calibrated beacon geometry.",
         },
         {
             "name": "Pile stab & alignment",
             "status": pile_state,
-            "detail": f'Gemini confidence {data["gemini_confidence"]}%; pile offset {data["pile_offset"]:.2f} m; verticality {data["pile_verticality"]:.2f}Â°',
+            "detail": f'Gemini confidence {data["gemini_confidence"]}%; pile offset {data["pile_offset"]:.2f} m; verticality {data["pile_verticality"]:.2f}°',
             "action": "Hold the pile clear of a damaging interface until alignment evidence is restored.",
         },
         {
@@ -521,7 +521,7 @@ def phase_geometry(phase_index: int, data: dict[str, Any], usbl_host: str) -> di
         "USBL_HOST": usbl_host.upper(),
         "LINK_COLOR": link_color,
         "LINK_STATUS": "ONLINE" if data["telemetry_link"] else "NO INPUT / TIMEOUT",
-        "CURRENT_VALUE": f'{data["surface_current"]:.2f} m/s @ {data["current_direction"]}Â°',
+        "CURRENT_VALUE": f'{data["surface_current"]:.2f} m/s @ {data["current_direction"]}°',
         "SVP_VALUE": f'{data["sound_speed"]:.1f} m/s' if data["svp_valid"] else "INVALID / STALE",
         "PILE_TOP": f"{pile_top}",
         "PILE_BOTTOM": f"{pile_bottom}",
@@ -589,7 +589,7 @@ SCENE_TEMPLATE = r"""
     <rect x="93" y="42" width="124" height="42" rx="3" fill="#1c2930" stroke="#55656b" stroke-width="3"/>
     <image href="__RIG_SCREEN_URI__" x="101" y="50" width="108" height="24" preserveAspectRatio="xMidYMid slice" clip-path="url(#rigScreenClip)"/>
     <circle cx="207" cy="78" r="3" fill="__LINK_COLOR__"/>
-    <text x="95" y="37" class="tiny" fill="#26353a">RIG SURVEY DESK â€¢ LIVE USV DATA</text>
+    <text x="95" y="37" class="tiny" fill="#26353a">RIG SURVEY DESK • LIVE USV DATA</text>
   </g>
 
   <!-- Hanging frame and drill pipe -->
@@ -638,23 +638,23 @@ SCENE_TEMPLATE = r"""
       <circle cx="693" cy="91" r="20" fill="#f1eee2" stroke="#d45b2a" stroke-width="5"/>
       <path d="M678 91H708M693 76V106" stroke="#4d5d63" stroke-width="3"/>
       <circle cx="693" cy="91" r="5" fill="#d45b2a"/>
-      <text x="716" y="96" class="tiny" fill="#fff0cd">INC-01 â€¢ PITCH + ROLL</text>
+      <text x="716" y="96" class="tiny" fill="#fff0cd">INC-01 • PITCH + ROLL</text>
     </g>
   </g>
-  <text x="600" y="__TEMPLATE_LABEL_Y__" text-anchor="end" class="lab" fill="#fff0c8">SST â€¢ DEPTH __TEMPLATE_DEPTH__ m â€¢ INC-01 ON TEMPLATE</text>
+  <text x="600" y="__TEMPLATE_LABEL_Y__" text-anchor="end" class="lab" fill="#fff0c8">SST • DEPTH __TEMPLATE_DEPTH__ m • INC-01 ON TEMPLATE</text>
 
   <!-- USBL transducer may be hosted from Wavebot or watchkeeping boat -->
   <g opacity="__ACOUSTIC_OPACITY__">
     <rect x="__USBL_X__" y="174" width="16" height="24" rx="6" fill="#f0c65b" stroke="#28373d" stroke-width="3"/>
     <path d="M__USBL_X__ 198 Q800 328 543 __TEMPLATE_Y__ M__USBL_X__ 198 Q850 345 727 __TEMPLATE_Y__" fill="none" stroke="#f2c85f" stroke-width="3" class="dash"/>
-    <text x="860" y="232" text-anchor="middle" class="tiny" fill="#ffeab3">USBL HOST â€¢ __USBL_HOST__</text>
+    <text x="860" y="232" text-anchor="middle" class="tiny" fill="#ffeab3">USBL HOST • __USBL_HOST__</text>
   </g>
 
   <!-- Tritech Gemini is side-mounted on Wavebot, just submerged and above iWBMS -->
   <g opacity="__GEMINI_OPACITY__" class="pulse">
     <path d="M825 184 Q735 260 660 __TEMPLATE_Y__ Q770 400 840 194Z" fill="url(#sonarFan)" stroke="#f2b84a" stroke-width="2"/>
     <path d="M828 188Q760 280 690 __TEMPLATE_Y__M828 188Q790 330 735 __TEMPLATE_Y__" fill="none" stroke="#ffdc86" stroke-width="2" opacity=".7"/>
-    <text x="742" y="270" class="tiny" fill="#ffe6a7">GEMINI IMAGE â€¢ TEMPLATE + PILE</text>
+    <text x="742" y="270" class="tiny" fill="#ffe6a7">GEMINI IMAGE • TEMPLATE + PILE</text>
   </g>
 
   <!-- Pile and MENCK hammer -->
@@ -677,7 +677,7 @@ SCENE_TEMPLATE = r"""
     <rect x="770" y="35" width="280" height="134" rx="11" fill="#21353b" stroke="#d45e2f" stroke-width="5"/>
     <image href="__WAVEBOT_URI__" x="775" y="40" width="270" height="124" preserveAspectRatio="xMidYMid slice" clip-path="url(#wavebotClip)"/>
     <rect x="775" y="137" width="270" height="27" fill="#10252c" fill-opacity=".82"/>
-    <text x="787" y="154" class="lab" fill="#f4e7c8">VIKRA WAVEBOT â€¢ AUTO USV</text>
+    <text x="787" y="154" class="lab" fill="#f4e7c8">VIKRA WAVEBOT • AUTO USV</text>
   </g>
 
   <!-- Velodyne on top of USV; rays stop at the waterline -->
@@ -686,7 +686,7 @@ SCENE_TEMPLATE = r"""
     <rect x="907" y="29" width="14" height="14" fill="#465155"/>
     <path d="M914 45L633 91L775 169L1010 169Z" fill="#e4ca52" opacity=".13" stroke="#e4ca52" stroke-width="2"/>
     <path d="M914 45L635 91M914 45L778 169M914 45L1008 169" stroke="#f1d963" stroke-width="2" stroke-dasharray="6 5"/>
-    <text x="820" y="33" class="tiny" fill="#26353a">VELODYNE LiDAR â€¢ ABOVE-WATER TRACKING</text>
+    <text x="820" y="33" class="tiny" fill="#26353a">VELODYNE LiDAR • ABOVE-WATER TRACKING</text>
   </g>
 
   <!-- Sensor stack beneath Wavebot: Gemini above NORBIT -->
@@ -709,7 +709,7 @@ SCENE_TEMPLATE = r"""
   <g>
     <line x1="1008" y1="164" x2="1008" y2="245" stroke="#d7d4bf" stroke-width="2" stroke-dasharray="7 5"/>
     <rect x="1000" y="240" width="16" height="30" rx="7" fill="#e7d9a4" stroke="#283b42" stroke-width="3"/>
-    <text x="941" y="286" class="tiny" fill="#dff2f2">SOUND VELOCITY â€¢ __SVP_VALUE__ â€¢ ACOUSTIC QC</text>
+    <text x="941" y="286" class="tiny" fill="#dff2f2">SOUND VELOCITY • __SVP_VALUE__ • ACOUSTIC QC</text>
     <path d="M930 314H1044L1028 302M1044 314L1028 326" fill="none" stroke="#b9eef0" stroke-width="4"/>
     <text x="927" y="344" class="tiny" fill="#dff2f2">SURFACE CURRENT __CURRENT_VALUE__</text>
   </g>
@@ -717,7 +717,7 @@ SCENE_TEMPLATE = r"""
   <!-- Telemetry is mirrored to rig and NAVALT survey consoles -->
   <g>
     <path d="M894 58Q570 4 208 52M950 63Q1072 45 1146 107" fill="none" stroke="__LINK_COLOR__" stroke-width="3" class="dash"/>
-    <text x="665" y="18" text-anchor="middle" class="tiny" fill="__LINK_COLOR__">USV TELEMETRY __LINK_STATUS__ â€¢ RIG + WATCHKEEPING BOAT</text>
+    <text x="665" y="18" text-anchor="middle" class="tiny" fill="__LINK_COLOR__">USV TELEMETRY __LINK_STATUS__ • RIG + WATCHKEEPING BOAT</text>
   </g>
 
   <!-- NAVALT conceptual watchkeeping/support boat -->
@@ -734,7 +734,7 @@ SCENE_TEMPLATE = r"""
     <line x1="1202" y1="105" x2="1202" y2="71" stroke="#34454c" stroke-width="4"/>
     <circle cx="1202" cy="67" r="6" fill="#d85e2f"/>
     <text x="1137" y="204" text-anchor="middle" class="lab" fill="#dfeff0">NAVALT WATCHKEEPING / SUPPORT BOAT</text>
-    <text x="1137" y="221" text-anchor="middle" class="tiny" fill="#cfe5e7">MODEL TBC â€¢ SURVEY DISPLAY â€¢ SAFETY COVER</text>
+    <text x="1137" y="221" text-anchor="middle" class="tiny" fill="#cfe5e7">MODEL TBC • SURVEY DISPLAY • SAFETY COVER</text>
   </g>
 
   <!-- Drawing elevations -->
@@ -743,13 +743,13 @@ SCENE_TEMPLATE = r"""
     <path d="M1249 51H1273M1249 104H1273M1249 170H1273M1249 566H1273" stroke="#35464c" stroke-width="3"/>
     <text x="1238" y="45" text-anchor="end" class="tiny" fill="#26353a">EL +39.700 DRILL FLOOR</text>
     <text x="1238" y="100" text-anchor="end" class="tiny" fill="#26353a">EL +28.278 MAIN DECK</text>
-    <text x="1238" y="166" text-anchor="end" class="tiny" fill="#dff2f2">MSL Â±0.000</text>
+    <text x="1238" y="166" text-anchor="end" class="tiny" fill="#dff2f2">MSL ±0.000</text>
     <text x="1238" y="562" text-anchor="end" class="tiny" fill="#fff0c9">MUDLINE EL -30.800</text>
   </g>
 
   <text x="26" y="194" class="lab" fill="#d5eff0">WATER COLUMN</text>
   <text x="26" y="603" class="lab" fill="#f7e9c5">SEABED / FOUNDATION ZONE</text>
-  <text x="26" y="678" class="tiny" fill="#efdfb8">VERTICAL PROPORTIONS ARE SCHEMATIC â€¢ SST TILT IS VISUALLY EXAGGERATED</text>
+  <text x="26" y="678" class="tiny" fill="#efdfb8">VERTICAL PROPORTIONS ARE SCHEMATIC • SST TILT IS VISUALLY EXAGGERATED</text>
 </svg>
 """
 
@@ -788,7 +788,7 @@ def phase_evidence(phase_index: int, data: dict[str, Any], usbl_host: str) -> li
         [
             ("NORBIT coverage", f'{data["survey_coverage"]:.1f}%', "SIMULATED MEASUREMENT"),
             ("Sound speed / SVP", f'{data["sound_speed"]:.1f} m/s' if data["svp_valid"] else "Invalid / stale", "ACOUSTIC CORRECTION QC"),
-            ("Surface current", f'{data["surface_current"]:.2f} m/s @ {data["current_direction"]}Â°', "OPERATING CONTEXT"),
+            ("Surface current", f'{data["surface_current"]:.2f} m/s @ {data["current_direction"]}°', "OPERATING CONTEXT"),
         ],
         [
             ("Sling A/B/C/D", " / ".join(f"{v:.1f}" for v in data["tensions"]) + " kN", "SIMULATED MEASUREMENT"),
@@ -797,17 +797,17 @@ def phase_evidence(phase_index: int, data: dict[str, Any], usbl_host: str) -> li
         ],
         [
             ("DEP-01 template depth", f'{template_depth:.1f} m', "PRESSURE / DEPTH SENSOR"),
-            ("Template pitch / roll", f'{data["pitch"]:.2f}Â° / {data["roll"]:.2f}Â°', "TEMPLATE INCLINOMETER"),
+            ("Template pitch / roll", f'{data["pitch"]:.2f}° / {data["roll"]:.2f}°', "TEMPLATE INCLINOMETER"),
             ("Descent / surface current", f'{data["descent_rate"]:.2f} / {data["surface_current"]:.2f} m/s', "HOIST + CURRENT SENSOR"),
         ],
         [
             ("DEP-01 touchdown depth", f'{template_depth:.1f} m', "DEPTH + LOAD CONFIRMATION"),
-            ("Touchdown pitch / roll", f'{data["pitch"]:.2f}Â° / {data["roll"]:.2f}Â°', "TEMPLATE INCLINOMETER"),
+            ("Touchdown pitch / roll", f'{data["pitch"]:.2f}° / {data["roll"]:.2f}°', "TEMPLATE INCLINOMETER"),
             ("Movement after set-down", f'{data["movement"]:.2f} m', "SIMULATED TREND"),
         ],
         [
-            ("USBL host / beacons", f'{usbl_host} â€¢ {data["beacons"]} of 2', "ACOUSTIC OBSERVATION"),
-            ("Fix uncertainty", f'Â±{data["fix_uncertainty"]:.2f} m', "SIMULATED QC"),
+            ("USBL host / beacons", f'{usbl_host} • {data["beacons"]} of 2', "ACOUSTIC OBSERVATION"),
+            ("Fix uncertainty", f'±{data["fix_uncertainty"]:.2f} m', "SIMULATED QC"),
             ("SV correction", "Valid" if data["svp_valid"] else "Invalid / stale", "RAY-PATH QC; NOT SOIL DATA"),
         ],
         [
@@ -817,7 +817,7 @@ def phase_evidence(phase_index: int, data: dict[str, Any], usbl_host: str) -> li
         ],
         [
             ("MENCK energy setting", f'{data["hammer_energy"]} kJ', "SIMULATED HAMMER LOG"),
-            ("Blow / penetration trend", f'{data["blow_rate"]}/min â€¢ {data["penetration"]} mm/10', "SIMULATED HAMMER LOG"),
+            ("Blow / penetration trend", f'{data["blow_rate"]}/min • {data["penetration"]} mm/10', "SIMULATED HAMMER LOG"),
             ("Surface / submerged track", "LiDAR / USBL + Gemini", "SENSOR HANDOVER"),
         ],
         [
@@ -869,9 +869,10 @@ def render_workspace(phase_index: int, scenario_name: str, usbl_host: str) -> st
       .stage{{min-height:56px;padding:9px 8px;border-right:1px solid var(--line);color:#7a8282}} .stage:last-child{{border-right:0}}
       .stage b{{display:block;font-size:10px;letter-spacing:1px}} .stage span{{font-size:10px;line-height:1.15;font-weight:800;text-transform:uppercase}}
       .stage.done{{background:#e4f0eb;color:#236b57}} .stage.active{{background:#f4dfaa;color:#322918;box-shadow:inset 0 5px 0 var(--rig)}}
-      .body{{display:grid;grid-template-columns:minmax(0,1.78fr) minmax(330px,.72fr);min-height:650px}}
-      .scene{{background:#c9dada;border-right:1px solid var(--line);overflow:hidden}} .scene svg{{display:block;width:100%;height:auto}}
-      .side{{background:#fffaf0;display:flex;flex-direction:column}}
+      .body{{display:grid;grid-template-columns:minmax(0,1.78fr) minmax(330px,.72fr);position:relative;align-items:start}}
+      .scene{{grid-column:1;grid-row:1;background:#c9dada;border-right:1px solid var(--line);overflow:hidden}}
+      .scene svg{{display:block;width:100%;height:auto}}
+      .side{{grid-column:2;grid-row:1;position:absolute;inset:0;background:#fffaf0;display:flex;flex-direction:column;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-color:#7f8b8d #efe7d7;scrollbar-width:thin}}
       .status{{padding:14px 16px;color:white;background:{color}}} .status small{{font-size:9px;font-weight:900;letter-spacing:1.4px;text-transform:uppercase;opacity:.82}}
       .statusline{{display:flex;align-items:baseline;gap:10px;margin-top:4px}} .statusline strong{{font-size:28px;letter-spacing:1px}} .statusline b{{font-size:14px}}
       .status p{{margin:7px 0 0;font-size:11px;line-height:1.4}}
@@ -888,20 +889,20 @@ def render_workspace(phase_index: int, scenario_name: str, usbl_host: str) -> st
       .gate em{{min-width:48px;padding:4px;color:white;font-size:8px;font-weight:900;font-style:normal;text-align:center;letter-spacing:.7px}}
       .gate em.go{{background:var(--go)}} .gate em.watch{{background:var(--watch)}} .gate em.hold{{background:var(--hold)}} .gate em.pending{{background:#778187}}
       .boundary{{padding:8px 12px;background:#26353c;color:#dbe5e5;font-size:8px;line-height:1.35;letter-spacing:.25px}}
-      @media(max-width:900px){{.body{{grid-template-columns:1fr}}.scene{{border-right:0}}.stages{{grid-template-columns:repeat(4,1fr)}}.head{{grid-template-columns:1fr}}.meta{{text-align:left}}}}
+      @media(max-width:900px){{.body{{grid-template-columns:1fr}}.scene{{grid-column:1;border-right:0}}.side{{grid-column:1;grid-row:auto;position:static;inset:auto;overflow:visible}}.stages{{grid-template-columns:repeat(4,1fr)}}.head{{grid-template-columns:1fr}}.meta{{text-align:left}}}}
     </style></head><body>
       <main class="frame">
-        <header class="head"><div><div class="kicker">VODIDS | MRSIF Foundation Installation Workspace</div><h1>SST deployment &amp; <span>pile installation mission</span></h1></div><div class="meta"><b>{html.escape(scenario_name)}</b>{html.escape(phase["drawing"])}<br>OFFLINE-CAPABLE DEMO â€¢ NO LIVE EQUIPMENT CONTROL</div></header>
+        <header class="head"><div><div class="kicker">VODIDS | MRSIF Foundation Installation Workspace</div><h1>SST deployment &amp; <span>pile installation mission</span></h1></div><div class="meta"><b>{html.escape(scenario_name)}</b>{html.escape(phase["drawing"])}<br>OFFLINE-CAPABLE DEMO • NO LIVE EQUIPMENT CONTROL</div></header>
         <div class="stages">{stage_html}</div>
         <div class="body">
           <section class="scene">{render_scene(phase_index, data, usbl_host)}</section>
           <aside class="side">
             <div class="status"><small>MRSIF mission recommendation</small><div class="statusline"><strong>{state}</strong><b>{html.escape(recommendation_title)}</b></div><p>{html.escape(recommendation_reason)}</p></div>
-            <div class="phasecopy"><small>Active mission â€¢ {phase["code"]}</small><h2>{html.escape(phase["name"])}</h2><p>{html.escape(phase["instruction"])}</p></div>
-            <div class="distribution">Wavebot telemetry â†’ rig survey desk + NAVALT mirror<br>MBES â€¢ Gemini â€¢ LiDAR â€¢ USBL â€¢ INC/DEP â€¢ SV/current</div>
+            <div class="phasecopy"><small>Active mission • {phase["code"]}</small><h2>{html.escape(phase["name"])}</h2><p>{html.escape(phase["instruction"])}</p></div>
+            <div class="distribution">Wavebot telemetry → rig survey desk + NAVALT mirror<br>MBES • Gemini • LiDAR • USBL • INC/DEP • SV/current</div>
             <div class="evidencegrid">{evidence_html}</div>
             <div class="gates">{render_gate_rows(gates, phase_index)}</div>
-            <div class="boundary">BOUNDARIES â€¢ INC-01 measures template pitch/roll, not lowering distance. DEP-01/hoist/acoustics provide depth. LiDAR stops at the waterline; Gemini/MBES/USBL provide submerged evidence. Sound velocity corrects acoustic ray paths; it is not a geotechnical seabed measurement. MRSIF does not control the hammer or certify pile capacity.</div>
+            <div class="boundary">BOUNDARIES • INC-01 measures template pitch/roll, not lowering distance. DEP-01/hoist/acoustics provide depth. LiDAR stops at the waterline; Gemini/MBES/USBL provide submerged evidence. Sound velocity corrects acoustic ray paths; it is not a geotechnical seabed measurement. MRSIF does not control the hammer or certify pile capacity.</div>
           </aside>
         </div>
       </main>
@@ -974,13 +975,13 @@ def render_browser_mission(scenario_name: str, usbl_host: str) -> str:
       .phase-status{{margin-left:auto;color:#dbe9e9;font-size:11px;font-weight:800;letter-spacing:.7px;text-transform:uppercase}}
       .notice{{display:none;gap:12px;align-items:center;padding:10px 12px;background:#8e302b;color:#fff;font-size:12px;font-weight:700}}
       .notice.show{{display:flex}} .notice button{{margin-left:auto;background:#fff1df}}
-      iframe{{display:block;width:100%;height:1000px;border:0;background:#e7e5dc}}
+      iframe{{display:block;width:100%;height:760px;min-height:520px;border:0;background:#e7e5dc}}
       .references{{padding:11px 12px 14px;background:#172b33;color:#eef4f2}}
       .references h2{{margin:0 0 8px;font-size:11px;letter-spacing:1.1px;text-transform:uppercase}}
       .strip{{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}}
       figure{{margin:0;background:#0e2027;overflow:hidden}} figure img{{display:block;width:100%;height:90px;object-fit:cover;filter:saturate(.86) contrast(1.03)}}
       figcaption{{padding:6px 7px;font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}}
-      @media(max-width:850px){{iframe{{height:1500px}}.strip{{grid-template-columns:repeat(2,1fr)}}.phase-status{{width:100%;margin-left:0}}}}
+      @media(max-width:850px){{iframe{{height:1180px}}.strip{{grid-template-columns:repeat(2,1fr)}}.phase-status{{width:100%;margin-left:0}}}}
     </style></head><body>
       <div class="toolbar" role="toolbar" aria-label="Mission controls">
         <button id="run" class="primary" type="button">Run mission</button>
@@ -1012,7 +1013,32 @@ def render_browser_mission(scenario_name: str, usbl_host: str) -> str:
         let phaseIndex = 0;
         let timer = null;
         let lastInput = Date.now();
+        let frameResizeObserver = null;
         const simulateTelemetryTimeout = {json.dumps(scenario_name == "USV telemetry timeout / no input")};
+
+        function resizeMissionFrame() {{
+          try {{
+            const documentRoot = frame.contentDocument;
+            if (!documentRoot || !documentRoot.documentElement || !documentRoot.body) return;
+            const contentHeight = Math.max(
+              documentRoot.documentElement.scrollHeight,
+              documentRoot.body.scrollHeight
+            );
+            if (contentHeight > 0) frame.style.height = Math.ceil(contentHeight) + "px";
+          }} catch (error) {{
+            frame.style.height = "1000px";
+          }}
+        }}
+
+        frame.addEventListener("load", () => {{
+          if (frameResizeObserver) frameResizeObserver.disconnect();
+          resizeMissionFrame();
+          const documentRoot = frame.contentDocument;
+          if (documentRoot && window.ResizeObserver) {{
+            frameResizeObserver = new ResizeObserver(resizeMissionFrame);
+            frameResizeObserver.observe(documentRoot.documentElement);
+          }}
+        }});
 
         function hydratedPage(index) {{
           return pages[index]
@@ -1021,8 +1047,9 @@ def render_browser_mission(scenario_name: str, usbl_host: str) -> str:
             .replaceAll("MRSIF_NAVALT_SCREEN_ASSET", assets.navalt);
         }}
         function render() {{
+          frame.style.height = "760px";
           frame.srcdoc = hydratedPage(phaseIndex);
-          phaseStatus.textContent = "Phase " + (phaseIndex + 1) + " of " + pages.length + " â€¢ {html.escape(usbl_host)} USBL host";
+          phaseStatus.textContent = "Phase " + (phaseIndex + 1) + " of " + pages.length + " • {html.escape(usbl_host)} USBL host";
           prevButton.disabled = phaseIndex === 0;
           nextButton.disabled = phaseIndex === pages.length - 1;
           if (phaseIndex === pages.length - 1 && timer) stopMission();
