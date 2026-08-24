@@ -46,7 +46,7 @@ import numpy as np
 
 
 APP_TITLE = "MRSIF | CALM Buoy Sonar Fusion"
-APP_VERSION = "Demonstration Release 1.0"
+APP_VERSION = "Demonstration Release 1.0.1"
 
 
 DEMO_LIMITS: dict[str, float] = {
@@ -771,18 +771,22 @@ def make_plan_figure(cfg: MissionConfig, simulation: dict[str, Any], drawing_ima
     sample_indices = np.linspace(0, len(path["xy"]) - 1, 4, dtype=int)
     mount_azimuth = 90.0 if cfg.gemini_side == "Starboard" else -90.0
     for index in sample_indices:
+        # Plotly 6.x validates Boolean properties strictly. Comparisons between
+        # NumPy integer scalars return numpy.bool_, so normalise the value before
+        # passing it to showlegend (required by newer Streamlit Cloud images).
+        show_sample_legend = bool(int(index) == int(sample_indices[0]))
         position = path["xy"][index]
         heading = float(path["heading_deg"][index])
         sonar_bearing = heading + mount_azimuth
         left = bearing_vector(sonar_bearing - cfg.gemini_half_angle_deg)
         right = bearing_vector(sonar_bearing + cfg.gemini_half_angle_deg)
         fan = np.vstack([position, position + cfg.gemini_range_m * left, position + cfg.gemini_range_m * right, position])
-        fig.add_trace(go.Scatter(x=fan[:, 0], y=fan[:, 1], mode="lines", fill="toself", opacity=0.08, line=dict(width=1), showlegend=index == sample_indices[0], name="Gemini lateral fan"))
+        fig.add_trace(go.Scatter(x=fan[:, 0], y=fan[:, 1], mode="lines", fill="toself", opacity=0.08, line=dict(width=1), showlegend=show_sample_legend, name="Gemini lateral fan"))
 
         swath = cfg.water_depth_m * math.tan(math.radians(cfg.mbes_half_swath_deg))
         right_vec = bearing_vector(heading + 90.0)
         swath_line = np.vstack([position - swath * right_vec, position + swath * right_vec])
-        fig.add_trace(go.Scatter(x=swath_line[:, 0], y=swath_line[:, 1], mode="lines", opacity=0.24, line=dict(width=2), showlegend=index == sample_indices[0], name="MBES seabed swath"))
+        fig.add_trace(go.Scatter(x=swath_line[:, 0], y=swath_line[:, 1], mode="lines", opacity=0.24, line=dict(width=2), showlegend=show_sample_legend, name="MBES seabed swath"))
 
     vessel_bearing = (cfg.suspect_bearing_deg + 150.0) % 360.0
     vessel_xy = cfg.vessel_standoff_m * bearing_vector(vessel_bearing)
@@ -1066,6 +1070,28 @@ def self_test() -> None:
     report = evidence_report(baseline_cfg, baseline_sim, controls, gates)
     json.dumps(report)
     assert report["gates"][0]["code"] == "G1"
+
+    # Exercise Plotly constructors when the optional UI dependency is present.
+    # This catches strict-property-validation changes such as numpy.bool_ being
+    # rejected for Boolean trace properties on newer Streamlit Cloud images.
+    try:
+        import plotly  # noqa: F401
+    except ImportError:
+        plotly = None
+    if plotly is not None:
+        figures = [
+            make_plan_figure(baseline_cfg, baseline_sim),
+            make_mbes_figure(baseline_cfg, baseline_sim, show_truth=True),
+            make_gemini_figure(baseline_sim),
+            make_fusion_figure(baseline_cfg, baseline_sim),
+            make_twin_figure(baseline_cfg, baseline_sim, show_truth=True),
+        ]
+        for figure in figures:
+            payload = figure.to_plotly_json()
+            assert payload["data"]
+            for trace in payload["data"]:
+                if "showlegend" in trace:
+                    assert isinstance(trace["showlegend"], bool)
     print("PASS: geometry, dual-sonar simulation, fusion, classification, G1-G8 gates and JSON evidence report")
 
 
