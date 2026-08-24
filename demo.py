@@ -9,7 +9,12 @@ Run the interactive application:
 
 What this demonstrator does
 ---------------------------
-* Plans a support-vessel stand-off and a surface-USV survey around a CALM buoy.
+* Renders a full functional CALM arrangement: floating hull/turntable, submerged
+  chain table, catenary mooring legs and seabed anchor piles. The functional
+  basis follows IMODCO's public CALM description (https://imodco.com/expertise/)
+  and is not an OEM fabrication model.
+* Plans three complete 360-degree surface-USV rings so the MBES can cover the
+  upper catenary, touchdown zone and seabed chain/anchor-pile corridor.
 * Models a hull-centreline, downward-looking multibeam and a lateral/inboard-
   facing Tritech Gemini-style imaging sonar mounted below the turbulent
   waterline on one surveyed rigid reference frame.
@@ -46,7 +51,7 @@ import numpy as np
 
 
 APP_TITLE = "MRSIF | CALM Buoy Sonar Fusion"
-APP_VERSION = "Demonstration Release 1.0.1"
+APP_VERSION = "Demonstration Release 1.1.0"
 
 
 DEMO_LIMITS: dict[str, float] = {
@@ -240,24 +245,41 @@ def generate_other_chains(cfg: MissionConfig) -> list[dict[str, Any]]:
 
 
 def build_usv_path(cfg: MissionConfig) -> dict[str, np.ndarray]:
-    """Create an offset radial line plus an inner orbit for complementary insonification."""
-    bearing = cfg.suspect_bearing_deg
-    direction = bearing_vector(bearing)
-    right = bearing_vector(bearing + 90.0)
-    side_sign = -1.0 if cfg.gemini_side == "Starboard" else 1.0
+    """Create three complete 360-degree rings from buoy to anchor corridor.
 
-    radial = np.linspace(cfg.usv_buoy_clearance_m, cfg.anchor_radius_m - 4.0, 30)
-    radial_xy = radial[:, None] * direction[None, :] + side_sign * cfg.usv_cross_track_m * right[None, :]
-    radial_heading = np.full(radial.shape, bearing)
+    One fixed-radius orbit cannot cover the upper catenary, touchdown region and
+    seabed chain/pile together. The three-ring plan preserves the requested 360°
+    motion while placing the downward MBES over each radial zone. Direction is
+    selected so the side-mounted Gemini faces inward toward the mooring legs.
+    """
+    outer_radius = max(cfg.usv_buoy_clearance_m + 8.0, cfg.anchor_radius_m - 6.0)
+    ring_radii = np.linspace(cfg.usv_buoy_clearance_m, outer_radius, 3)
+    clockwise = cfg.gemini_side == "Starboard"
+    xy_blocks: list[np.ndarray] = []
+    heading_blocks: list[np.ndarray] = []
+    ring_blocks: list[np.ndarray] = []
 
-    orbit_bearings = np.linspace(bearing - 64.0, bearing + 64.0, 19)
-    orbit_xy = np.vstack([cfg.usv_buoy_clearance_m * bearing_vector(value) for value in orbit_bearings])
-    mount_azimuth = 90.0 if cfg.gemini_side == "Starboard" else -90.0
-    orbit_heading = (orbit_bearings + 180.0 - mount_azimuth) % 360.0
+    for ring_index, radius in enumerate(ring_radii):
+        if clockwise:
+            bearings = np.linspace(0.0, 360.0, 73, endpoint=False)
+            headings = (bearings + 90.0) % 360.0
+        else:
+            bearings = np.linspace(360.0, 0.0, 73, endpoint=False)
+            headings = (bearings - 90.0) % 360.0
+        xy_blocks.append(np.vstack([radius * bearing_vector(value) for value in bearings]))
+        heading_blocks.append(headings)
+        ring_blocks.append(np.full(len(bearings), ring_index, dtype=int))
 
-    xy = np.vstack((orbit_xy, radial_xy))
-    heading = np.concatenate((orbit_heading, radial_heading))
-    return {"xy": xy, "heading_deg": heading, "orbit_count": np.array([len(orbit_xy)])}
+    xy = np.vstack(xy_blocks)
+    heading = np.concatenate(heading_blocks)
+    ring_index = np.concatenate(ring_blocks)
+    return {
+        "xy": xy,
+        "heading_deg": heading,
+        "ring_index": ring_index,
+        "ring_radii_m": ring_radii,
+        "orbit_count": np.array([len(xy)]),
+    }
 
 
 def _nearest_distances(query: np.ndarray, reference: np.ndarray, chunk: int = 256) -> np.ndarray:
@@ -695,6 +717,12 @@ def evidence_report(
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "boundary": "Simulated/configured demonstration; not live telemetry, field release or certification.",
         "mission_config": asdict(cfg),
+        "survey_plan": {
+            "strategy": "Three complete 360-degree rings plus targeted radial tie-lines where coverage shadows remain.",
+            "ring_radii_m": [round(float(value), 2) for value in simulation["path"]["ring_radii_m"]],
+            "simulated_usv_poses": int(len(simulation["path"]["xy"])),
+            "sensor_orientation": "NORBIT nadir/downward; Gemini lateral and inward-facing.",
+        },
         "classification": simulation["classification"],
         "fusion_metrics": {
             "mbes_returns": len(simulation["mbes"]["xyz"]),
@@ -720,6 +748,326 @@ def _plotly_imports() -> tuple[Any, Any]:
     return go, make_subplots
 
 
+def _cylinder_surface(
+    centre_x: float,
+    centre_y: float,
+    radius: float,
+    z_bottom: float,
+    z_top: float,
+    samples: int = 48,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    theta = np.linspace(0.0, 2.0 * np.pi, samples)
+    z_axis = np.array([z_bottom, z_top], dtype=float)
+    tt, zz = np.meshgrid(theta, z_axis)
+    xx = centre_x + radius * np.cos(tt)
+    yy = centre_y + radius * np.sin(tt)
+    return xx, yy, zz
+
+
+def _disc_surface(
+    centre_x: float,
+    centre_y: float,
+    radius: float,
+    elevation: float,
+    samples: int = 48,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    theta = np.linspace(0.0, 2.0 * np.pi, samples)
+    radial = np.linspace(0.0, radius, 8)
+    tt, rr = np.meshgrid(theta, radial)
+    xx = centre_x + rr * np.cos(tt)
+    yy = centre_y + rr * np.sin(tt)
+    zz = np.full_like(xx, elevation)
+    return xx, yy, zz
+
+
+def _torus_surface(
+    major_radius: float,
+    minor_radius: float,
+    elevation: float,
+    samples: int = 48,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    theta = np.linspace(0.0, 2.0 * np.pi, samples)
+    phi = np.linspace(0.0, 2.0 * np.pi, 14)
+    tt, pp = np.meshgrid(theta, phi)
+    xx = (major_radius + minor_radius * np.cos(pp)) * np.cos(tt)
+    yy = (major_radius + minor_radius * np.cos(pp)) * np.sin(tt)
+    zz = elevation + minor_radius * np.sin(pp)
+    return xx, yy, zz
+
+
+def _line_with_physical_gaps(xyz: np.ndarray, physical: np.ndarray) -> tuple[list[float | None], list[float | None], list[float | None]]:
+    x: list[float | None] = []
+    y: list[float | None] = []
+    z: list[float | None] = []
+    drawing = False
+    for point, valid in zip(xyz, physical):
+        if bool(valid):
+            x.append(float(point[0]))
+            y.append(float(point[1]))
+            z.append(float(point[2]))
+            drawing = True
+        elif drawing:
+            x.append(None)
+            y.append(None)
+            z.append(None)
+            drawing = False
+    return x, y, z
+
+
+def make_full_system_figure(
+    cfg: MissionConfig,
+    simulation: dict[str, Any],
+    orbit_angle_deg: float = 45.0,
+    selected_ring_index: int = 1,
+) -> Any:
+    """Render the full CALM buoy, mooring legs, piles and moving USV sensor geometry."""
+    go, _ = _plotly_imports()
+    fig = go.Figure()
+    seabed = simulation["seabed"]
+    fig.add_trace(
+        go.Surface(
+            x=seabed["x"],
+            y=seabed["y"],
+            z=seabed["z"],
+            opacity=0.82,
+            colorscale=[[0.0, "#3d4d45"], [1.0, "#8c8068"]],
+            showscale=False,
+            name="Seabed",
+            hoverinfo="skip",
+        )
+    )
+
+    water_x = seabed["x"][::3, ::3]
+    water_y = seabed["y"][::3, ::3]
+    water_z = np.zeros_like(water_x)
+    fig.add_trace(
+        go.Surface(
+            x=water_x,
+            y=water_y,
+            z=water_z,
+            opacity=0.13,
+            colorscale=[[0.0, "#1d6fa5"], [1.0, "#67c3df"]],
+            showscale=False,
+            name="Sea surface",
+            hoverinfo="skip",
+        )
+    )
+
+    for chain_index, item in enumerate(simulation["all_chains"]):
+        chain_x, chain_y, chain_z = _line_with_physical_gaps(item["xyz"], item["physical"])
+        fig.add_trace(
+            go.Scatter3d(
+                x=chain_x,
+                y=chain_y,
+                z=chain_z,
+                mode="lines",
+                line=dict(color="#ffb000" if item["suspect"] else "#b8c2cc", width=9 if item["suspect"] else 5),
+                opacity=1.0 if item["suspect"] else 0.72,
+                name="Suspected mooring leg" if item["suspect"] else "Other mooring legs",
+                legendgroup="chain",
+                showlegend=bool(item["suspect"] or chain_index == 1),
+                hovertemplate=("Suspected chain" if item["suspect"] else f"Mooring leg {chain_index + 1}") + "<extra></extra>",
+            )
+        )
+
+        anchor_point = item["xyz"][-1]
+        anchor_seabed = float(seabed_z(np.array([anchor_point[0]]), np.array([anchor_point[1]]), cfg)[0])
+        pile_x, pile_y, pile_z = _cylinder_surface(
+            float(anchor_point[0]),
+            float(anchor_point[1]),
+            max(0.9, 0.10 * cfg.buoy_radius_m),
+            anchor_seabed - 5.0,
+            anchor_seabed + 1.0,
+            samples=24,
+        )
+        fig.add_trace(
+            go.Surface(
+                x=pile_x,
+                y=pile_y,
+                z=pile_z,
+                colorscale=[[0.0, "#59636e"], [1.0, "#a9b0b7"]],
+                opacity=0.96,
+                showscale=False,
+                name="Anchor piles",
+                legendgroup="pile",
+                showlegend=bool(chain_index == 0),
+                hovertemplate=f"Anchor pile P{chain_index + 1}<extra></extra>",
+            )
+        )
+
+    hull_x, hull_y, hull_z = _cylinder_surface(0.0, 0.0, cfg.buoy_radius_m, -cfg.buoy_draft_m, 2.4)
+    fig.add_trace(
+        go.Surface(
+            x=hull_x,
+            y=hull_y,
+            z=hull_z,
+            colorscale=[[0.0, "#d78516"], [1.0, "#f6c344"]],
+            showscale=False,
+            opacity=1.0,
+            name="CALM buoy hull",
+            hovertemplate="Floating CALM buoy hull<extra></extra>",
+        )
+    )
+    deck_x, deck_y, deck_z = _disc_surface(0.0, 0.0, cfg.buoy_radius_m, 2.4)
+    fig.add_trace(go.Surface(x=deck_x, y=deck_y, z=deck_z, colorscale=[[0.0, "#d1d5da"], [1.0, "#f0f2f3"]], showscale=False, name="Main deck", hoverinfo="skip"))
+
+    turntable_x, turntable_y, turntable_z = _cylinder_surface(0.0, 0.0, 0.72 * cfg.buoy_radius_m, 2.45, 4.5)
+    fig.add_trace(go.Surface(x=turntable_x, y=turntable_y, z=turntable_z, colorscale=[[0.0, "#67717b"], [1.0, "#b8c0c7"]], showscale=False, name="Rotating turntable", hovertemplate="Rotating turntable / product-transfer deck<extra></extra>"))
+    turntable_top_x, turntable_top_y, turntable_top_z = _disc_surface(0.0, 0.0, 0.72 * cfg.buoy_radius_m, 4.5)
+    fig.add_trace(go.Surface(x=turntable_top_x, y=turntable_top_y, z=turntable_top_z, colorscale=[[0.0, "#7c8791"], [1.0, "#d8dde1"]], showscale=False, name="Turntable top", hoverinfo="skip"))
+
+    swivel_x, swivel_y, swivel_z = _cylinder_surface(0.0, 0.0, 0.18 * cfg.buoy_radius_m, 4.5, 7.2, samples=32)
+    fig.add_trace(go.Surface(x=swivel_x, y=swivel_y, z=swivel_z, colorscale=[[0.0, "#9c2f2f"], [1.0, "#e36143"]], showscale=False, name="Central swivel", hovertemplate="Central swivel / service column<extra></extra>"))
+
+    chain_table_x, chain_table_y, chain_table_z = _torus_surface(0.82 * cfg.buoy_radius_m, 0.42, -cfg.buoy_draft_m + 0.25)
+    fig.add_trace(go.Surface(x=chain_table_x, y=chain_table_y, z=chain_table_z, colorscale=[[0.0, "#5c6570"], [1.0, "#bbc1c7"]], showscale=False, name="Chain table", hovertemplate="Submerged chain table / hawse connection zone<extra></extra>"))
+
+    path = simulation["path"]
+    ring_radii = np.asarray(path["ring_radii_m"], dtype=float)
+    selected_ring_index = int(np.clip(selected_ring_index, 0, len(ring_radii) - 1))
+    ring_names = ["Inner 360° ring", "Mid 360° ring", "Outer 360° ring"]
+    orbit_bearings = np.linspace(0.0, 360.0, 181)
+    for ring_index, radius in enumerate(ring_radii):
+        orbit_xy = np.vstack([radius * bearing_vector(value) for value in orbit_bearings])
+        selected = ring_index == selected_ring_index
+        fig.add_trace(
+            go.Scatter3d(
+                x=orbit_xy[:, 0],
+                y=orbit_xy[:, 1],
+                z=np.full(len(orbit_xy), 0.7),
+                mode="lines",
+                line=dict(color="#00d5ff" if selected else "#6b7f8d", width=8 if selected else 3, dash="solid" if selected else "dot"),
+                opacity=1.0 if selected else 0.45,
+                name=ring_names[ring_index],
+                showlegend=True,
+                hovertemplate=f"{ring_names[ring_index]}: {radius:.0f} m radius<extra></extra>",
+            )
+        )
+
+    orbit_radius = float(ring_radii[selected_ring_index])
+    radial_unit = bearing_vector(float(orbit_angle_deg))
+    usv_xy = orbit_radius * radial_unit
+    fig.add_trace(
+        go.Scatter3d(
+            x=[float(usv_xy[0])],
+            y=[float(usv_xy[1])],
+            z=[1.2],
+            mode="markers+text",
+            marker=dict(size=9, color="#00d5ff", symbol="diamond"),
+            text=["USV"],
+            textposition="top center",
+            name="USV with NORBIT + Gemini",
+            hovertemplate=f"USV azimuth {orbit_angle_deg:.0f}° • radius {orbit_radius:.0f} m<extra></extra>",
+        )
+    )
+
+    sensor_z = -0.7
+    swath_half_width = min(cfg.water_depth_m * math.tan(math.radians(cfg.mbes_half_swath_deg)), 0.62 * cfg.anchor_radius_m)
+    bottom_left_xy = usv_xy - swath_half_width * radial_unit
+    bottom_right_xy = usv_xy + swath_half_width * radial_unit
+    bottom_left_z = float(seabed_z(np.array([bottom_left_xy[0]]), np.array([bottom_left_xy[1]]), cfg)[0])
+    bottom_right_z = float(seabed_z(np.array([bottom_right_xy[0]]), np.array([bottom_right_xy[1]]), cfg)[0])
+    fig.add_trace(
+        go.Mesh3d(
+            x=[float(usv_xy[0]), float(bottom_left_xy[0]), float(bottom_right_xy[0])],
+            y=[float(usv_xy[1]), float(bottom_left_xy[1]), float(bottom_right_xy[1])],
+            z=[sensor_z, bottom_left_z, bottom_right_z],
+            i=[0],
+            j=[1],
+            k=[2],
+            color="#1fe0ff",
+            opacity=0.24,
+            name="NORBIT MBES swath",
+            hovertemplate="Downward multibeam swath<extra></extra>",
+        )
+    )
+    for fraction in np.linspace(-1.0, 1.0, 9):
+        bottom_xy = usv_xy + fraction * swath_half_width * radial_unit
+        bottom_z = float(seabed_z(np.array([bottom_xy[0]]), np.array([bottom_xy[1]]), cfg)[0])
+        fig.add_trace(
+            go.Scatter3d(
+                x=[float(usv_xy[0]), float(bottom_xy[0])],
+                y=[float(usv_xy[1]), float(bottom_xy[1])],
+                z=[sensor_z, bottom_z],
+                mode="lines",
+                line=dict(color="#70efff", width=2),
+                opacity=0.55,
+                showlegend=False,
+                hoverinfo="skip",
+            )
+        )
+
+    inward = -radial_unit
+    gemini_length = min(cfg.gemini_range_m, max(16.0, orbit_radius - 0.5 * cfg.buoy_radius_m))
+    gemini_near_xy = usv_xy + 0.72 * gemini_length * inward
+    gemini_far_xy = usv_xy + gemini_length * inward
+    fig.add_trace(
+        go.Mesh3d(
+            x=[float(usv_xy[0]), float(gemini_near_xy[0]), float(gemini_far_xy[0])],
+            y=[float(usv_xy[1]), float(gemini_near_xy[1]), float(gemini_far_xy[1])],
+            z=[-0.45, -4.0, -min(cfg.water_depth_m, 17.0)],
+            i=[0],
+            j=[1],
+            k=[2],
+            color="#ff7a2f",
+            opacity=0.28,
+            name="Gemini inward fan",
+            hovertemplate="Side-mounted Gemini fan directed toward mooring legs<extra></extra>",
+        )
+    )
+
+    suspect = simulation["all_chains"][0]
+    suspect_mid = suspect["xyz"][int(0.58 * (len(suspect["xyz"]) - 1))]
+    suspect_anchor = suspect["xyz"][-1]
+    fig.add_trace(
+        go.Scatter3d(
+            x=[float(suspect_mid[0]), float(suspect_anchor[0])],
+            y=[float(suspect_mid[1]), float(suspect_anchor[1])],
+            z=[float(suspect_mid[2]) + 2.0, float(suspect_anchor[2]) + 2.0],
+            mode="text",
+            text=["Suspected chain", "Suspected anchor pile"],
+            textfont=dict(color="#ffcc55", size=12),
+            showlegend=False,
+            hoverinfo="skip",
+        )
+    )
+
+    vessel_bearing = (cfg.suspect_bearing_deg + 150.0) % 360.0
+    vessel_xy = cfg.vessel_standoff_m * bearing_vector(vessel_bearing)
+    fig.add_trace(
+        go.Scatter3d(
+            x=[float(vessel_xy[0])],
+            y=[float(vessel_xy[1])],
+            z=[1.6],
+            mode="markers+text",
+            marker=dict(size=10, color="#f2f4f5", symbol="square"),
+            text=["Client vessel • safer-side stand-off"],
+            textposition="top center",
+            name="Client vessel",
+        )
+    )
+
+    extent = cfg.anchor_radius_m + 22.0
+    fig.update_layout(
+        title="Full CALM buoy inspection concept — 360° USV rings, mooring legs and anchor piles",
+        scene=dict(
+            xaxis=dict(title="East (m)", range=[-extent, extent], backgroundcolor="#07141d", gridcolor="#31424f"),
+            yaxis=dict(title="North (m)", range=[-extent, extent], backgroundcolor="#07141d", gridcolor="#31424f"),
+            zaxis=dict(title="Elevation (m)", range=[-cfg.water_depth_m - 7.0, 10.0], backgroundcolor="#07141d", gridcolor="#31424f"),
+            aspectmode="manual",
+            aspectratio=dict(x=1.0, y=1.0, z=0.48),
+            camera=dict(eye=dict(x=1.45, y=-1.65, z=1.15)),
+        ),
+        paper_bgcolor="#07141d",
+        plot_bgcolor="#07141d",
+        font=dict(color="#e8f1f5"),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0.0),
+        height=820,
+        margin=dict(l=0, r=0, t=95, b=0),
+    )
+    return fig
+
+
 def make_plan_figure(cfg: MissionConfig, simulation: dict[str, Any], drawing_image: Any | None = None, drawing_opacity: float = 0.35) -> Any:
     go, _ = _plotly_imports()
     fig = go.Figure()
@@ -743,10 +1091,11 @@ def make_plan_figure(cfg: MissionConfig, simulation: dict[str, Any], drawing_ima
     for item in simulation["all_chains"]:
         xyz = item["xyz"]
         physical = item["physical"]
+        chain_x, chain_y, _ = _line_with_physical_gaps(xyz, physical)
         fig.add_trace(
             go.Scatter(
-                x=xyz[:, 0],
-                y=xyz[:, 1],
+                x=chain_x,
+                y=chain_y,
                 mode="lines",
                 line=dict(width=3.5 if item["suspect"] else 1.3, dash="solid" if item["suspect"] else "dot"),
                 opacity=0.95 if item["suspect"] else 0.35,
@@ -794,7 +1143,7 @@ def make_plan_figure(cfg: MissionConfig, simulation: dict[str, Any], drawing_ima
     fig.add_trace(go.Scatter(x=[0.0], y=[0.0], mode="markers+text", marker=dict(size=28, symbol="circle"), text=["CALM buoy"], textposition="top center", name="CALM buoy"))
     fig.add_trace(go.Scatter(x=[path["xy"][0, 0]], y=[path["xy"][0, 1]], mode="markers+text", marker=dict(size=14, symbol="triangle-up"), text=["USV"], textposition="bottom center", name="USV"))
     fig.update_layout(
-        title="Plan view - vessel stand-off, USV route and complementary acoustic coverage",
+        title="Plan view - safer-side vessel stand-off and three complete 360° USV rings",
         xaxis_title="Easting from buoy (m)",
         yaxis_title="Northing from buoy (m)",
         yaxis=dict(scaleanchor="x", scaleratio=1),
@@ -963,7 +1312,7 @@ def run_app() -> None:
     finding_col.metric("Acoustic interpretation", simulation["classification"])
 
     st.info(
-        "Mounting rule: the USV remains a surface vehicle. Mount the NORBIT wet end on the surveyed hull centreline, "
+        "Mounting rule: the USV remains a surface vehicle and completes full 360-degree inspection rings. Mount the NORBIT wet end on the surveyed hull centreline, "
         "nadir-looking below the aerated boundary layer. Mount the Gemini laterally on the inboard side of the survey "
         "line, also below the turbulent waterline, with a controlled downward cant. Both heads, GNSS/IMU and time "
         "source must share one measured reference frame. Confirm acoustic interference and ping scheduling during trials."
@@ -975,10 +1324,22 @@ def run_app() -> None:
     if drawing_file is not None:
         drawing_image = Image.open(drawing_file).convert("RGBA")
 
-    tabs = st.tabs(["Mission geometry", "MBES point cloud", "Gemini image", "Fusion confidence", "3D evidence twin", "MRSIF gates", "Execution plan"])
+    tabs = st.tabs(["Full CALM + 360° mission", "MBES point cloud", "Gemini image", "Fusion confidence", "3D evidence twin", "MRSIF gates", "Execution plan"])
     with tabs[0]:
-        st.plotly_chart(make_plan_figure(cfg, simulation, drawing_image, drawing_opacity), use_container_width=True)
-        st.caption("The offset radial pass places the suspected chain on the Gemini-facing side; the inner orbit looks beneath the buoy while the MBES provides seabed and chain-relief context.")
+        ring_labels = ["Inner ring — chain table / upper catenary", "Mid ring — suspended span / touchdown", "Outer ring — seabed chain / anchor piles"]
+        control_col, angle_col = st.columns([1, 1])
+        with control_col:
+            selected_ring_label = st.selectbox("Displayed 360° inspection ring", ring_labels, index=1)
+        with angle_col:
+            orbit_angle = st.slider("Displayed USV position around buoy (degrees)", 0, 359, 45, 1)
+        selected_ring_index = ring_labels.index(selected_ring_label)
+        st.plotly_chart(make_full_system_figure(cfg, simulation, float(orbit_angle), selected_ring_index), use_container_width=True)
+        st.caption(
+            "Three complete rings are shown because one fixed-radius orbit cannot insonify the full mooring leg from the submerged chain table to the seabed pile. "
+            "The selected ring highlights the moving NORBIT swath; the Gemini fan faces inward toward the chains. Functional CALM basis: public IMODCO description."
+        )
+        with st.expander("Open 2D survey plan and approved-drawing overlay"):
+            st.plotly_chart(make_plan_figure(cfg, simulation, drawing_image, drawing_opacity), use_container_width=True)
     with tabs[1]:
         show_truth_mbes = st.checkbox("Show configured expected corridor on MBES view", True, key="truth_mbes")
         st.plotly_chart(make_mbes_figure(cfg, simulation, show_truth_mbes), use_container_width=True)
@@ -996,7 +1357,7 @@ def run_app() -> None:
         show_truth_twin = st.checkbox("Show configured expected chain in twin", True, key="truth_twin")
         st.plotly_chart(make_twin_figure(cfg, simulation, show_truth_twin), use_container_width=True)
     with tabs[5]:
-        st.dataframe([asdict(gate) for gate in gates], use_container_width=True, hide_index=True)
+        st.dataframe([asdict(gate) for gate in gates], width="stretch", hide_index=True)
         report = evidence_report(cfg, simulation, controls, gates)
         st.download_button("Download MRSIF evidence JSON", data=json.dumps(report, indent=2), file_name="mrsif_calm_buoy_fusion_evidence.json", mime="application/json")
     with tabs[6]:
@@ -1005,11 +1366,12 @@ def run_app() -> None:
             1. Confirm the approved CALM buoy drawing, suspected chain ID, datum, chain bearings, buoy excursion and safe exclusion boundary.
             2. Position the client vessel on the safer approved side. Complete bridge interface, SIMOPS release, launch corridor and recovery plan.
             3. Install and survey the common sensor frame: GNSS/IMU, centreline MBES and lateral Gemini. Verify offsets, time, SVP and acoustic interference.
-            4. Deploy the USV and acquire the outer reconnaissance/radial passes first. Use MBES to build the seabed and mooring-corridor context.
-            5. Run the offset chain-parallel pass with the Gemini facing the chain. Add the inner orbit only after the geofence and stand-off review.
-            6. Preserve both raw sources. Transform them through the common frame, calculate co-registration residuals and build the fused confidence layer.
-            7. Classify only observed evidence: suspended, seabed contact, displaced, apparent discontinuity/termination or inconclusive. Route confidence gaps for targeted reacquisition or positioned ROV verification.
-            8. Close out with raw indexes, configuration/offset record, QC, target register, fused twin, limitations and two verified data copies.
+            4. Deploy the USV and complete an outer 360-degree reconnaissance ring first. Confirm the buoy excursion envelope, floating-hose hazards, vessel traffic and safe recovery corridor.
+            5. Acquire three approved 360-degree rings: inner for the chain table/upper catenary, middle for the suspended span/touchdown and outer for the seabed chain/anchor piles. Keep the Gemini facing inward throughout each ring.
+            6. Add targeted radial tie-lines or cross-lines wherever the ring swaths leave a coverage shadow; a single fixed-radius orbit is not accepted as complete end-to-end chain coverage.
+            7. Preserve both raw sources. Transform them through the common frame, calculate co-registration residuals and build the fused confidence layer.
+            8. Classify only observed evidence: suspended, seabed contact, displaced, apparent discontinuity/termination or inconclusive. Route confidence gaps for targeted reacquisition or positioned ROV verification.
+            9. Close out with raw indexes, configuration/offset record, QC, target register, fused twin, limitations and two verified data copies.
             """
         )
 
@@ -1017,6 +1379,8 @@ def run_app() -> None:
 def self_test() -> None:
     baseline_cfg = MissionConfig(scenario="Intact / localised")
     baseline_sim = simulate_mission(baseline_cfg)
+    assert len(baseline_sim["path"]["ring_radii_m"]) == 3
+    assert len(baseline_sim["path"]["xy"]) >= 3 * 72
     assert len(baseline_sim["mbes"]["xyz"]) > 80
     assert len(baseline_sim["gemini"]["xyz"]) > 60
     assert baseline_sim["fusion"]["overlap_pairs"] > 20
@@ -1080,6 +1444,7 @@ def self_test() -> None:
         plotly = None
     if plotly is not None:
         figures = [
+            make_full_system_figure(baseline_cfg, baseline_sim, orbit_angle_deg=45.0, selected_ring_index=1),
             make_plan_figure(baseline_cfg, baseline_sim),
             make_mbes_figure(baseline_cfg, baseline_sim, show_truth=True),
             make_gemini_figure(baseline_sim),
