@@ -36,17 +36,22 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Helper function to extract text from PDF
+# Robust PDF Text Extraction with Fallback Warning
 def extract_pdf_text(uploaded_file):
     try:
         import pypdf
         reader = pypdf.PdfReader(uploaded_file)
         text = ""
         for page in reader.pages:
-            text += page.extract_text() or ""
+            extracted = page.extract_text()
+            if extracted:
+                text += extracted + "\n"
+        if len(text.strip()) < 50:
+            st.warning(f"⚠️ '{uploaded_file.name}' appears to be a scanned image or has minimal text. Results may be estimated.")
         return text
-    except Exception:
-        return uploaded_file.getvalue().decode("latin-1", errors="ignore")
+    except Exception as e:
+        st.error(f"Error reading PDF {uploaded_file.name}: {e}")
+        return ""
 
 # Role Requirements Definition & Weighting Rules
 ROLE_CRITERIA = {
@@ -79,7 +84,7 @@ ROLE_CRITERIA = {
 TIER_1_SOFTWARE = [
     "qinsy", "eiva", "navisuite", "caris", "hips", "sips", 
     "sonarwiz", "kingdom", "qimera", "starfix", "fusion 2", 
-    "autocad civil 3d", "microstation", "uxo bentley", "opensite", "beamworx", "navaq"
+    "autocad civil 3d", "microstation", "uxo bentley", "opensite", "beamworx", "navaq", "hypack"
 ]
 
 LEGACY_SOFTWARE = [
@@ -100,7 +105,7 @@ SPECIALIST_TAGS = {
     "CONST-SUPPORT": ["pipelay", "jacket installation", "construction support", "barge"]
 }
 
-# Sidebar Controls
+# Sidebar Controls for Role Selection & Dynamic Weighting
 st.sidebar.header("🎯 Target Role & Weighting Setup")
 selected_role = st.sidebar.selectbox("Select Target Offshore Role", list(ROLE_CRITERIA.keys()))
 
@@ -116,7 +121,7 @@ st.markdown(f"### 📋 Active Evaluation Profile: **{selected_role}**")
 st.markdown(f"*Minimum Experience Required: {role_config['min_exp']} Years | Priority Tags: {', '.join(role_config['required_tags'])}*")
 
 # Batch CV Uploader (1 to 10+ CVs)
-uploaded_files = st.file_uploader("Upload Candidate CVs (PDF) — Select 1 up to 10+ CVs for Comparative Scrutiny", type=["pdf"], accept_multiple_files=True)
+uploaded_files = st.file_uploader("Upload Candidate CVs (PDF) — Select 1 up to 10 CVs for Comparative Scrutiny", type=["pdf"], accept_multiple_files=True)
 
 if uploaded_files:
     if len(uploaded_files) > 10:
@@ -130,17 +135,33 @@ if uploaded_files:
             cv_text = extract_pdf_text(file)
             cv_lower = cv_text.lower()
             
+            # Experience Extraction with Date-Range Fallback
+            est_exp = 5  
             years_found = re.findall(r'(\d+[\+\s]*(?:years?|yrs?))', cv_lower)
-            est_exp = 5
             if years_found:
                 nums = [int(re.search(r'\d+', y).group()) for y in years_found if int(re.search(r'\d+', y).group()) < 40]
                 if nums:
                     est_exp = max(nums)
-            
+            else:
+                year_ranges = re.findall(r'(20\d{2})\s*[-–to]+\s*(20\d{2}|present|current)', cv_lower)
+                if year_ranges:
+                    total_yrs = 0
+                    current_yr = datetime.now().year
+                    for start, end in year_ranges:
+                        s_yr = int(start)
+                        e_yr = current_yr if end in ['present', 'current'] else int(end)
+                        if s_yr <= e_yr:
+                            total_yrs += (e_yr - s_yr)
+                    if total_yrs > 0:
+                        est_exp = min(max(total_yrs, 1), 30)
+
+            # Software Matching
             matched_t1 = [sw.upper() for sw in TIER_1_SOFTWARE if sw in cv_lower]
-            matched_leg = [sw.upper() for sw in LEGACY_SOFTWARE if sw in cv_lower]
+            
+            # Specialist Tag Matching
             tags = [tag for tag, kws in SPECIALIST_TAGS.items() if any(kw in cv_lower for kw in kws)]
             
+            # Scoring Algorithm
             base_exp_score = min(est_exp * 0.4 * exp_weight, 4.0)
             sw_score = min(len(set(matched_t1)) * 0.5 * software_weight, 3.0)
             role_tag_matches = sum(1 for t in role_config["required_tags"] if t in tags)
@@ -149,6 +170,7 @@ if uploaded_files:
             raw_score = (base_exp_score + sw_score + tag_bonus) * role_config["weight_multiplier"]
             demand_rank = max(1, min(10, round(raw_score / 1.2)))
             
+            # Recommendation Tier
             if demand_rank >= 8:
                 rec = "Elite Candidate - Immediate Interview Recommended"
             elif demand_rank >= 6:
@@ -166,6 +188,7 @@ if uploaded_files:
                 "raw_score": demand_rank
             })
 
+    # Sort Candidates by Score Descending
     candidate_results = sorted(candidate_results, key=lambda x: x["raw_score"], reverse=True)
 
     st.markdown("---")
@@ -178,6 +201,7 @@ if uploaded_files:
         use_container_width=True
     )
 
+    # Top Candidate Spotlight
     top_cand = candidate_results[0]
     st.success(f"🌟 **Top Recommended Candidate for {selected_role}: {top_cand['Candidate Name']}** (Rank: {top_cand['Demand Rank']}/10) — *{top_cand['Recommendation']}*")
 
@@ -190,4 +214,4 @@ if uploaded_files:
         mime="text/csv"
     )
 else:
-    st.info("👈 Please select the target role in the sidebar and upload between 1 to 10 candidate PDF CVs above to start comparative scrutiny.")
+    st.info("👈 Please select your target role in the sidebar and upload between 1 to 10 candidate PDF CVs above to start comparative scrutiny.")
